@@ -279,6 +279,7 @@
         <div class="card padded" style="grid-column: span 4">
           <div class="stat">
             <svg
+              id="statusWheel"
               width="44"
               height="44"
               viewBox="0 0 44 44"
@@ -292,12 +293,7 @@
                 stroke="var(--border)"
                 stroke-width="6"
               ></circle>
-              <path
-                d="M22 4 a18 18 0 0 1 0 36"
-                stroke="var(--blue)"
-                stroke-width="6"
-                stroke-linecap="round"
-              ></path>
+              <g id="wheelSegments"></g>
             </svg>
             <div>
               <div
@@ -463,6 +459,86 @@
           });
         kpiTotal.textContent = items.length;
 
+        // draw status wheel showing distribution across statuses
+        function drawStatusWheel(items) {
+          const seg = document.getElementById("wheelSegments");
+          if (!seg) return;
+          // categorize counts similarly to badgeClass
+          const counts = { green: 0, blue: 0, amber: 0, red: 0, gray: 0 };
+          for (let i = 0; i < items.length; i++) {
+            const s = lc((items[i].fieldData && items[i].fieldData.c_status) || "");
+            if (s === "not sent" || s === "notsent") counts.gray++;
+            else if (s.indexOf("pending") === 0) counts.blue++;
+            else if (s.indexOf("complete") === 0 || s.indexOf("approved") >= 0)
+              counts.green++;
+            else if (s.indexOf("denied") === 0) counts.red++;
+            else counts.amber++;
+          }
+
+          // clear previous
+          seg.innerHTML = "";
+          const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+          const cx = 22,
+            cy = 22,
+            r = 18;
+          let start = -90; // start at top
+
+          function polarToCartesian(cx, cy, r, angleDeg) {
+            const angleRad = ((angleDeg - 90) * Math.PI) / 180.0;
+            return {
+              x: cx + r * Math.cos(angleRad),
+              y: cy + r * Math.sin(angleRad),
+            };
+          }
+
+          function describeArc(cx, cy, r, startAngle, endAngle) {
+            const start = polarToCartesian(cx, cy, r, endAngle);
+            const end = polarToCartesian(cx, cy, r, startAngle);
+            const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+            return [
+              "M",
+              start.x,
+              start.y,
+              "A",
+              r,
+              r,
+              0,
+              largeArcFlag,
+              0,
+              end.x,
+              end.y,
+            ].join(" ");
+          }
+
+          const order = [
+            { key: "green", color: "var(--green)" },
+            { key: "blue", color: "var(--blue)" },
+            { key: "amber", color: "var(--amber)" },
+            { key: "red", color: "var(--red)" },
+            { key: "gray", color: "var(--gray)" },
+          ];
+
+          for (const o of order) {
+            const cnt = counts[o.key];
+            if (!cnt) continue;
+            const angle = (cnt / total) * 360;
+            const end = start + angle;
+            // leave a tiny gap between segments for visibility
+            const gap = 1; // degrees
+            const pathD = describeArc(cx, cy, r, start + gap / 2, end - gap / 2);
+            const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            p.setAttribute("d", pathD);
+            p.setAttribute("stroke", o.color);
+            p.setAttribute("stroke-width", "6");
+            p.setAttribute("fill", "none");
+            p.setAttribute("stroke-linecap", "butt");
+            seg.appendChild(p);
+            start = end;
+          }
+        }
+
+        drawStatusWheel(items);
+
         let recentArr = items.slice(0);
         recentArr.sort((a, b) => {
           const fa = a.fieldData || {},
@@ -541,6 +617,8 @@
 
             grid.appendChild(card);
           }
+          // update wheel to reflect the currently rendered list
+          drawStatusWheel(list);
           statusEl.textContent = `Showing ${list.length} of ${items.length} requests.`;
           statusEl.className = "statusline ok";
         }
