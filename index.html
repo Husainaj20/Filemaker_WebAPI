@@ -563,7 +563,8 @@
             p.dataset.key = o.key;
 
             // animate drawing using stroke-dasharray/dashoffset and animate stroke-width for selection
-            p.style.transition = "stroke-dashoffset 600ms cubic-bezier(.2,.8,.2,1), stroke-width 220ms ease";
+            p.style.transition =
+              "stroke-dashoffset 600ms cubic-bezier(.2,.8,.2,1), stroke-width 220ms ease";
 
             // append first so getTotalLength works in all browsers
             seg.appendChild(p);
@@ -575,7 +576,9 @@
               // set stroke-width based on selection
               p.setAttribute("stroke-width", isSelected ? "8" : "6");
               // trigger the draw animation on next frame
-              requestAnimationFrame(() => requestAnimationFrame(() => (p.style.strokeDashoffset = "0")));
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() => (p.style.strokeDashoffset = "0"))
+              );
             } catch (err) {
               // fallback: just set stroke width
               p.setAttribute("stroke-width", isSelected ? "8" : "6");
@@ -674,6 +677,8 @@
           }
           // update wheel to reflect the currently rendered list
           drawStatusWheel(list);
+          // update KPI to show currently visible/filtered count
+          kpiTotal.textContent = list.length;
           statusEl.textContent = `Showing ${list.length} of ${items.length} requests.`;
           statusEl.className = "statusline ok";
         }
