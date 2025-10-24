@@ -468,7 +468,8 @@
           s = lc(s);
           if (s === "not sent" || s === "notsent") return "gray";
           if (s.indexOf("pending") === 0) return "blue";
-          if (s.indexOf("complete") === 0 || s.indexOf("approved") >= 0) return "green";
+          if (s.indexOf("complete") === 0 || s.indexOf("approved") >= 0)
+            return "green";
           if (s.indexOf("denied") === 0) return "red";
           return "amber";
         }
@@ -556,20 +557,37 @@
             p.setAttribute("stroke", o.color);
             // highlight selected segment
             const isSelected = selectedStatusKey === o.key;
-            p.setAttribute("stroke-width", isSelected ? "8" : "6");
             p.setAttribute("fill", "none");
             p.setAttribute("stroke-linecap", "butt");
             p.style.cursor = "pointer";
             p.dataset.key = o.key;
+
+            // animate drawing using stroke-dasharray/dashoffset and animate stroke-width for selection
+            p.style.transition = "stroke-dashoffset 600ms cubic-bezier(.2,.8,.2,1), stroke-width 220ms ease";
+
+            // append first so getTotalLength works in all browsers
+            seg.appendChild(p);
+            try {
+              const len = p.getTotalLength();
+              p.style.strokeDasharray = String(len);
+              // start hidden (offset == length)
+              p.style.strokeDashoffset = String(len);
+              // set stroke-width based on selection
+              p.setAttribute("stroke-width", isSelected ? "8" : "6");
+              // trigger the draw animation on next frame
+              requestAnimationFrame(() => requestAnimationFrame(() => (p.style.strokeDashoffset = "0")));
+            } catch (err) {
+              // fallback: just set stroke width
+              p.setAttribute("stroke-width", isSelected ? "8" : "6");
+            }
+
+            // click to toggle selection -> reapply filters and redraw
             p.addEventListener("click", function (e) {
-              // toggle selection: clicking same segment clears it
               selectedStatusKey = selectedStatusKey === o.key ? null : o.key;
-              // reapply filters and redraw wheel (render will redraw again too)
               applyFilters();
               drawStatusWheel(items);
               e.stopPropagation();
             });
-            seg.appendChild(p);
             start = end;
           }
         }
