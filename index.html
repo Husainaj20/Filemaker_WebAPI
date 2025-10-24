@@ -70,24 +70,17 @@
       .row {
         display: grid;
         grid-template-columns: repeat(12, 1fr);
-        grid-auto-rows: 1fr; /* allow rows to split evenly so stacked left cards match right card height */
         gap: 16px;
         margin-top: 16px;
-        align-items: stretch;
       }
       .card {
         background: #fff;
         border: 1px solid var(--border);
         border-radius: 12px;
         box-shadow: var(--shadow);
-        display: flex;
-        flex-direction: column;
       }
       .padded {
         padding: 16px;
-        /* ensure padded content can grow/shrink inside a flexible card */
-        min-height: 0;
-        flex: 1 1 auto;
       }
       .stat {
         display: flex;
@@ -269,125 +262,6 @@
         }
       }
     </style>
-          const sel = document.getElementById("task_recipient");
-          buildRecipientOptions(sel, existing.recipient || fd.recipientName || "");
-
-          // populate other existing values
-          if (existing.datesEntered) document.getElementById("task_dates_entered").value = existing.datesEntered;
-          if (existing.requestSentDate) document.getElementById("task_sent_date").value = existing.requestSentDate;
-          if (existing.requestResponseDate) document.getElementById("task_resp_date").value = existing.requestResponseDate;
-          if (existing.status) document.getElementById("task_status").value = existing.status;
-          if (existing.notes) document.getElementById("task_notes").value = existing.notes;
-
-          // file inputs: show filename and store only name (no upload)
-          const reqInput = document.getElementById("task_req_pdf");
-          const respInput = document.getElementById("task_resp_pdf");
-          const reqName = document.getElementById("task_req_pdf_name");
-          const respName = document.getElementById("task_resp_pdf_name");
-          reqInput.addEventListener("change", (e) => {
-            const f = e.target.files && e.target.files[0];
-            if (f) {
-              reqName.textContent = f.name;
-            }
-          });
-          respInput.addEventListener("change", (e) => {
-            const f = e.target.files && e.target.files[0];
-            if (f) {
-              respName.textContent = f.name;
-            }
-          });
-
-          document.getElementById("task_save").addEventListener("click", () => {
-            const payload = {
-              requestPdfName: reqName.textContent || "",
-              responsePdfName: respName.textContent || "",
-              recipient: document.getElementById("task_recipient").value || "",
-              datesEntered: document.getElementById("task_dates_entered").value || "",
-              requestSentDate: document.getElementById("task_sent_date").value || "",
-              requestResponseDate: document.getElementById("task_resp_date").value || "",
-              status: document.getElementById("task_status").value || "",
-              notes: document.getElementById("task_notes").value || "",
-              updatedAt: new Date().toISOString(),
-            };
-            tasksStore[rid] = payload;
-            saveTasksStore();
-            tasksCard.style.display = "none";
-            // re-render to ensure any status-based UI updates reflect new status
-            applyFilters();
-          });
-
-          document.getElementById("task_clear").addEventListener("click", () => {
-            delete tasksStore[rid];
-            saveTasksStore();
-            tasksCard.style.display = "none";
-            applyFilters();
-          });
-
-          tasksCard.style.display = "block";
-          tasksCard.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-        color: #b45309;
-        border-color: #fde68a;
-      }
-      .b-gray {
-        background: #f3f4f6;
-        color: #374151;
-        border-color: #e5e7eb;
-      }
-      .meta {
-        margin-top: 6px;
-        font-size: 12px;
-        color: var(--muted);
-      }
-      .desc {
-        margin-top: 10px;
-        color: #475569;
-        font-size: 13px;
-        min-height: 36px;
-      }
-      .bar {
-        height: 8px;
-        background: #eef2ff;
-        border-radius: 999px;
-        overflow: hidden;
-        margin-top: 10px;
-      }
-      .bar > span {
-        display: block;
-        height: 100%;
-        background: var(--blue);
-      }
-      .statusline {
-        margin-top: 10px;
-        color: var(--muted);
-        font-size: 12px;
-      }
-      .ok {
-        color: var(--green);
-      }
-      .err {
-        color: var(--red);
-      }
-      #dbg {
-        position: fixed;
-        right: 8px;
-        bottom: 8px;
-        background: #fff;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 6px 8px;
-        font: 12px/1.2 ui-monospace, Menlo, monospace;
-        color: #334155;
-        box-shadow: var(--shadow);
-        display: none;
-      }
-      @media (max-width: 640px) {
-        .topbar {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-      }
-    </style>
   </head>
   <body>
     <div class="topbar">
@@ -432,7 +306,7 @@
             </div>
           </div>
         </div>
-  <div class="card padded" style="grid-column: span 8; grid-row: span 2">
+        <div class="card padded" style="grid-column: span 8">
           <div
             class="muted"
             style="letter-spacing: 0.08em; font-size: 12px; margin-bottom: 8px"
@@ -441,17 +315,19 @@
           </div>
           <div class="list" id="recent"></div>
         </div>
-        </div>
+      </div>
 
-        <!-- Tasks card sits under the project card in the left column (hidden until opened) -->
-        <div id="tasksCard" class="card padded" style="grid-column: span 4; display:none">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div style="font-weight:700">Tasks</div>
-            <div><button id="tasksClose" class="pill">Close</button></div>
+      <!-- duplicates row: shows potential duplicate requests (click group to filter) -->
+      <div class="row" style="margin-top: 12px">
+        <div class="card padded" style="grid-column: span 4">
+          <div class="muted" style="letter-spacing: 0.08em; font-size: 12px">
+            DUPLICATE REQUESTS
           </div>
-          <div id="tasksContent" style="margin-top:12px"><!-- populated dynamically --></div>
+          <div id="duplicatesList" class="list" style="margin-top: 8px">
+            No duplicates
+          </div>
         </div>
-
+        <div style="grid-column: span 8"></div>
       </div>
 
       <div class="controls">
@@ -465,8 +341,6 @@
           <option value="">All Recipients</option>
         </select>
       </div>
-
-      <!-- tasksCard is rendered in the left column under the project card (defined earlier) -->
 
       <div class="grid" id="grid"></div>
       <div class="statusline" id="status">Loading…</div>
@@ -736,6 +610,56 @@
 
         drawStatusWheel(items);
 
+        // build duplicate groups from the current list and render into duplicatesList
+        function updateDuplicates(list) {
+          const container = document.getElementById("duplicatesList");
+          if (!container) return;
+          const groups = {};
+          for (let i = 0; i < list.length; i++) {
+            const rec = list[i];
+            const f = rec.fieldData || {};
+            const recip = es(f.recipientName || "").trim();
+            const type = es(f["Request Type"] || "").trim();
+            if (!recip && !type) continue;
+            const key = (recip + "|" + type).toLowerCase();
+            if (!groups[key]) groups[key] = { recip: recip, type: type, items: [] };
+            groups[key].items.push(rec);
+          }
+          const dupGroups = Object.values(groups).filter((g) => g.items.length > 1);
+          container.innerHTML = "";
+          if (!dupGroups.length) {
+            container.textContent = "No duplicates";
+            return;
+          }
+          dupGroups.sort((a, b) => b.items.length - a.items.length);
+          dupGroups.forEach((g) => {
+            const el = document.createElement("div");
+            el.className = "li";
+            const count = g.items.length;
+            el.innerHTML = `<div style="flex:0 0 28px; font-weight:700; color:var(--muted)">${count}</div>
+              <div style="flex:1">
+                <div style="font-weight:600">${es(g.type || "(no type)")}</div>
+                <div class="muted">${es(g.recip || "(no recipient)")}</div>
+              </div>
+              <div style="flex:0 0 auto; margin-left:8px"><button class="sel" data-recip="${escapeHtml(
+                g.recip
+              )}" data-type="${escapeHtml(g.type)}">Filter</button></div>`;
+            const btn = el.querySelector("button");
+            btn.addEventListener("click", function () {
+              // set the selectors and apply filters
+              if (g.type) fType.value = g.type; else fType.value = "";
+              if (g.recip) fRecip.value = g.recip; else fRecip.value = "";
+              applyFilters();
+            });
+            container.appendChild(el);
+          });
+        }
+
+        // small helper to escape HTML for attributes (very small, safe usage)
+        function escapeHtml(s) {
+          return (s || "").replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        }
+
         let recentArr = items.slice(0);
         recentArr.sort((a, b) => {
           const fa = a.fieldData || {},
@@ -801,24 +725,10 @@
             const desc = `<div class="desc">PrimaryKey: ${es(
               fd.PrimaryKey || ""
             )}</div>`;
-            // add a Tasks button and a deep-link; keep click on card for FM deep-link
-            const actions = `<div style="margin-top:10px;display:flex;gap:8px;align-items:center"><button class="pill task-btn" data-rid="${es(
-              rec.recordId || ""
-            )}">Tasks</button><a class="muted" href="#" data-rid="${es(
-              rec.recordId || ""
-            )}">Open in FM</a></div>`;
+            card.innerHTML = title + meta + bar + desc;
 
-            card.innerHTML = title + meta + bar + desc + actions;
-
-            // FM deep link preserved (harmless on web) on card click
-            card.addEventListener("click", (e) => {
-              // if the click was on the Tasks button, ignore (handler below will manage)
-              if (
-                e.target &&
-                e.target.classList &&
-                e.target.classList.contains("task-btn")
-              )
-                return;
+            // FM deep link preserved (harmless on web)
+            card.addEventListener("click", () => {
               if (rec.recordId) {
                 window.location.href =
                   "fmp://$/new%20excessland%20management.fmp12?script=Requests%20-%20Open%20by%20RecordID&param=" +
@@ -827,31 +737,11 @@
             });
 
             grid.appendChild(card);
-
-            // wire up Tasks button to open the tasks card
-            const tb = card.querySelector(".task-btn");
-            if (tb) {
-              tb.addEventListener("click", (ev) => {
-                ev.stopPropagation();
-                showTasksForRecord(rec);
-              });
-            }
-            // wire up Open in FM link to deep link (stop propagation)
-            const fmLink = card.querySelector("a[data-rid]");
-            if (fmLink) {
-              fmLink.addEventListener("click", (ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-                if (rec.recordId) {
-                  window.location.href =
-                    "fmp://$/new%20excessland%20management.fmp12?script=Requests%20-%20Open%20by%20RecordID&param=" +
-                    encodeURIComponent(String(rec.recordId));
-                }
-              });
-            }
           }
           // update wheel to reflect the currently rendered list
           drawStatusWheel(list);
+          // update duplicates card based on the currently rendered list
+          updateDuplicates(list);
           // update KPI to show currently visible/filtered count
           kpiTotal.textContent = list.length;
           statusEl.textContent = `Showing ${list.length} of ${items.length} requests.`;
