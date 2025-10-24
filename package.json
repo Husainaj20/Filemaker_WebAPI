@@ -1,0 +1,62 @@
+{
+  "name": "excess-land-dashboard",
+  "version": "1.0.0",
+  "description": "Requests dashboard with FileMaker Data API or local mock.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-fetch": "^3.3.2"
+  },
+  "mockRequests": {
+    "response": {
+      "data": [
+        {
+          "fieldData": {
+            "PrimaryKey": "56EF87C9-3013-B743-917E-C4A4C1D30123",
+            "Request Type": "Appraisal",
+            "recipientName": "Stephen Hughey",
+            "requestedOn": "",
+            "dateReceived": "",
+            "CompletedOn": "",
+            "c_status": "Pending - Submitted"
+          },
+          "portalData": {},
+          "recordId": "314",
+          "modId": "7"
+        },
+        {
+          "fieldData": {
+            "PrimaryKey": "4074C42B-2E67-BB4A-9790-A6F6D2E650D4",
+            "Request Type": "Clearance",
+            "recipientName": "Michele Graves",
+            "requestedOn": "",
+            "dateReceived": "09/15/2025",
+            "CompletedOn": "09/22/2025",
+            "c_status": "Complete - Approved"
+          },
+          "portalData": {},
+          "recordId": "816",
+          "modId": "17"
+        },
+        {
+          "fieldData": {
+            "PrimaryKey": "5BD2FE1B-37D3-D842-AAC7-56F34B93FBD9",
+            "Request Type": "Clearance",
+            "recipientName": "Mike Yung",
+            "requestedOn": "",
+            "dateReceived": "",
+            "CompletedOn": "",
+            "c_status": "Not Sent"
+          },
+          "portalData": {},
+          "recordId": "847",
+          "modId": "2"
+        }
+      ]
+    }
+  }
+}

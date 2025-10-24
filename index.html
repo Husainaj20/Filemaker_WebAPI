@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Requests</title>
+    <style>
+      :root {
+        --bg: #f7f9fb;
+        --card: #ffffff;
+        --border: #e5e7eb;
+        --muted: #6b7280;
+        --text: #111827;
+        --blue: #2563eb;
+        --green: #059669;
+        --red: #dc2626;
+        --amber: #d97706;
+        --gray: #4b5563;
+        --shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+      }
+      .container {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        background: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 5;
+      }
+      .brand {
+        font-weight: 700;
+      }
+      .pills {
+        display: flex;
+        gap: 8px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: #fff;
+        font-size: 13px;
+      }
+      .pill.active {
+        background: #eef2ff;
+        border-color: #bfdbfe;
+        color: var(--blue);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+      }
+      .padded {
+        padding: 16px;
+      }
+      .stat {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .num {
+        font-size: 32px;
+        font-weight: 800;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .li {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #cbd5e1;
+        margin-top: 6px;
+      }
+      .blue {
+        background: #60a5fa;
+      }
+      .green {
+        background: #34d399;
+      }
+      .amber {
+        background: #fbbf24;
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      .search {
+        flex: 1;
+        min-width: 220px;
+      }
+      .search input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+      }
+      .sel {
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .req {
+        padding: 16px;
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+      }
+      .req:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+      }
+      .title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+      .title h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .badge {
+        display: inline-block;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 12px;
+        background: #f8fafc;
+        color: #334155;
+        white-space: nowrap;
+      }
+      .b-blue {
+        background: #e0eaff;
+        color: var(--blue);
+        border-color: #bfdbfe;
+      }
+      .b-green {
+        background: #ecfdf5;
+        color: var(--green);
+        border-color: #a7f3d0;
+      }
+      .b-red {
+        background: #fee2e2;
+        color: var(--red);
+        border-color: #fecaca;
+      }
+      .b-amber {
+        background: #fef3c7;
+        color: #b45309;
+        border-color: #fde68a;
+      }
+      .b-gray {
+        background: #f3f4f6;
+        color: #374151;
+        border-color: #e5e7eb;
+      }
+      .meta {
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .desc {
+        margin-top: 10px;
+        color: #475569;
+        font-size: 13px;
+        min-height: 36px;
+      }
+      .bar {
+        height: 8px;
+        background: #eef2ff;
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 10px;
+      }
+      .bar > span {
+        display: block;
+        height: 100%;
+        background: var(--blue);
+      }
+      .statusline {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .ok {
+        color: var(--green);
+      }
+      .err {
+        color: var(--red);
+      }
+      #dbg {
+        position: fixed;
+        right: 8px;
+        bottom: 8px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 8px;
+        font: 12px/1.2 ui-monospace, Menlo, monospace;
+        color: #334155;
+        box-shadow: var(--shadow);
+        display: none;
+      }
+      @media (max-width: 640px) {
+        .topbar {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand">Project Overview</div>
+      <div class="pills">
+        <div class="pill active">All Requests</div>
+        <div class="pill">My Requests</div>
+        <div class="pill">Overdue</div>
+        <div class="pill">This Quarter</div>
+      </div>
+    </div>
+
+    <main class="container">
+      <div class="row">
+        <div class="card padded" style="grid-column: span 4">
+          <div class="stat">
+            <svg
+              width="44"
+              height="44"
+              viewBox="0 0 44 44"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="22"
+                cy="22"
+                r="18"
+                stroke="var(--border)"
+                stroke-width="6"
+              ></circle>
+              <path
+                d="M22 4 a18 18 0 0 1 0 36"
+                stroke="var(--blue)"
+                stroke-width="6"
+                stroke-linecap="round"
+              ></path>
+            </svg>
+            <div>
+              <div
+                class="muted"
+                style="letter-spacing: 0.08em; font-size: 12px"
+              >
+                REQUESTS
+              </div>
+              <div class="num" id="kpiTotal">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="card padded" style="grid-column: span 8">
+          <div
+            class="muted"
+            style="letter-spacing: 0.08em; font-size: 12px; margin-bottom: 8px"
+          >
+            RECENT ACTIVITY
+          </div>
+          <div class="list" id="recent"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="search">
+          <input id="q" type="search" placeholder="Search requests…" />
+        </div>
+        <select id="fType" class="sel">
+          <option value="">All Request Types</option>
+        </select>
+        <select id="fRecip" class="sel">
+          <option value="">All Recipients</option>
+        </select>
+      </div>
+
+      <div class="grid" id="grid"></div>
+      <div class="statusline" id="status">Loading…</div>
+    </main>
+
+    <!-- In FileMaker you embed JSON here; for web we leave it empty -->
+    <script id="data" type="application/json"></script>
+
+    <div id="dbg"></div>
+
+    <script>
+      (async function () {
+        function es(v) {
+          return v == null ? "" : String(v);
+        }
+        function lc(s) {
+          return es(s).toLowerCase().trim();
+        }
+        function badgeClass(s) {
+          s = lc(s);
+          if (s === "not sent" || s === "notsent") return "b-gray";
+          if (s.indexOf("pending") === 0) return "b-blue";
+          if (s.indexOf("complete") === 0 || s.indexOf("approved") >= 0)
+            return "b-green";
+          if (s.indexOf("denied") === 0) return "b-red";
+          return "b-amber";
+        }
+        function pct(rec) {
+          var f = rec.fieldData || {};
+          return f.CompletedOn
+            ? 100
+            : f.dateReceived
+            ? 60
+            : f.requestedOn
+            ? 30
+            : 0;
+        }
+        function parseDate(s) {
+          return Date.parse(es(s)) || 0;
+        }
+
+        // 1) embedded JSON (FM mode)
+        let items = [];
+        try {
+          const raw = document.getElementById("data").textContent || "";
+          if (raw.trim().length > 2) {
+            const parsed = JSON.parse(raw);
+            items = Array.isArray(parsed)
+              ? parsed
+              : (parsed.response && parsed.response.data) || [];
+          }
+        } catch (e) {}
+
+        // 2) fetch live then fallback to mock for easier testing
+        if (!items.length) {
+          const urlParams = new URLSearchParams(location.search);
+          const explicitlyMock = urlParams.has("mock");
+          const primaryUrl = explicitlyMock
+            ? "/mock/requests"
+            : "/api/requests";
+
+          try {
+            const r = await fetch(primaryUrl);
+            if (r.ok) {
+              const j = await r.json();
+              items = Array.isArray(j)
+                ? j
+                : (j.response && j.response.data) || [];
+            } else {
+              // when primary fails (e.g. 500 from /api/requests) try mock if not explicitly asking live
+              if (!explicitlyMock) {
+                const r2 = await fetch("/mock/requests");
+                if (r2.ok) {
+                  const j2 = await r2.json();
+                  items = Array.isArray(j2)
+                    ? j2
+                    : (j2.response && j2.response.data) || [];
+                }
+              }
+            }
+          } catch (e) {
+            // network/parse error, try mock as a last resort (unless the user explicitly requested live mock=false)
+            if (!explicitlyMock) {
+              try {
+                const r3 = await fetch("/mock/requests");
+                if (r3.ok) {
+                  const j3 = await r3.json();
+                  items = Array.isArray(j3)
+                    ? j3
+                    : (j3.response && j3.response.data) || [];
+                }
+              } catch (_) {
+                /* ignore - will fall through to empty items */
+              }
+            }
+          }
+        }
+
+        const grid = document.getElementById("grid");
+        const statusEl = document.getElementById("status");
+        const q = document.getElementById("q");
+        const fType = document.getElementById("fType");
+        const fRecip = document.getElementById("fRecip");
+        const kpiTotal = document.getElementById("kpiTotal");
+        const recent = document.getElementById("recent");
+
+        const types = {},
+          recips = {};
+        for (let i = 0; i < items.length; i++) {
+          const f = items[i].fieldData || {};
+          if (f["Request Type"]) types[f["Request Type"]] = 1;
+          if (f.recipientName) recips[f.recipientName] = 1;
+        }
+        Object.keys(types)
+          .sort()
+          .forEach((t) => {
+            const o = document.createElement("option");
+            o.value = t;
+            o.textContent = t;
+            fType.appendChild(o);
+          });
+        Object.keys(recips)
+          .sort()
+          .forEach((n) => {
+            const o = document.createElement("option");
+            o.value = n;
+            o.textContent = n;
+            fRecip.appendChild(o);
+          });
+        kpiTotal.textContent = items.length;
+
+        let recentArr = items.slice(0);
+        recentArr.sort((a, b) => {
+          const fa = a.fieldData || {},
+            fb = b.fieldData || {};
+          const da = Math.max(
+            parseDate(fa.CompletedOn),
+            parseDate(fa.dateReceived),
+            parseDate(fa.requestedOn)
+          );
+          const db = Math.max(
+            parseDate(fb.CompletedOn),
+            parseDate(fb.dateReceived),
+            parseDate(fb.requestedOn)
+          );
+          return db - da;
+        });
+        recentArr = recentArr.slice(0, 5);
+        recent.innerHTML = "";
+        for (let i = 0; i < recentArr.length; i++) {
+          const f = recentArr[i].fieldData || {};
+          let msg = "Request updated";
+          const d =
+            parseDate(f.CompletedOn) ||
+            parseDate(f.dateReceived) ||
+            parseDate(f.requestedOn);
+          const dt = d ? new Date(d).toLocaleDateString() : "";
+          if (f.CompletedOn) msg = "Completed";
+          else if (f.dateReceived) msg = "Response received";
+          else if (f.requestedOn) msg = "Requested";
+          let dot = "blue";
+          if (f.CompletedOn) dot = "green";
+          else if (!f.requestedOn) dot = "amber";
+          const li = document.createElement("div");
+          li.className = "li";
+          li.innerHTML = `<span class="dot ${dot}"></span>
+        <div><div style="font-weight:600">${es(msg)}</div>
+        <div class="muted">${es(f["Request Type"] || "")} • ${es(
+            f.recipientName || ""
+          )}${dt ? " • " + dt : ""}</div></div>`;
+          recent.appendChild(li);
+        }
+
+        function render(list) {
+          grid.innerHTML = "";
+          for (let j = 0; j < list.length; j++) {
+            const rec = list[j],
+              fd = rec.fieldData || {};
+            const p = pct(rec);
+            const card = document.createElement("div");
+            card.className = "card req";
+            const title = `<div class="title"><h3>${es(
+              fd["Request Type"] || "Request"
+            )}</h3>
+          <span class="badge ${badgeClass(fd.c_status || "")}">${es(
+              fd.c_status || ""
+            )}</span></div>`;
+            const meta = `<div class="meta">${es(
+              fd.recipientName || "—"
+            )} • ${es(fd.requestedOn || "")}${
+              fd.dateReceived ? " • Recv " + es(fd.dateReceived) : ""
+            }${fd.CompletedOn ? " • Done " + es(fd.CompletedOn) : ""}</div>`;
+            const bar = `<div class="bar"><span style="width:${p}%"></span></div>`;
+            const desc = `<div class="desc">PrimaryKey: ${es(
+              fd.PrimaryKey || ""
+            )}</div>`;
+            card.innerHTML = title + meta + bar + desc;
+
+            // FM deep link preserved (harmless on web)
+            card.addEventListener("click", () => {
+              if (rec.recordId) {
+                window.location.href =
+                  "fmp://$/new%20excessland%20management.fmp12?script=Requests%20-%20Open%20by%20RecordID&param=" +
+                  encodeURIComponent(String(rec.recordId));
+              }
+            });
+
+            grid.appendChild(card);
+          }
+          statusEl.textContent = `Showing ${list.length} of ${items.length} requests.`;
+          statusEl.className = "statusline ok";
+        }
+
+        function applyFilters() {
+          const term = lc(q.value),
+            t = fType.value,
+            rcv = fRecip.value,
+            out = [];
+          for (let k = 0; k < items.length; k++) {
+            const x = items[k],
+              fx = x.fieldData || {};
+            if (t && es(fx["Request Type"]) !== t) continue;
+            if (rcv && es(fx.recipientName) !== rcv) continue;
+            if (!term) {
+              out.push(x);
+              continue;
+            }
+            const hay = (
+              es(fx["Request Type"]) +
+              " " +
+              es(fx.recipientName) +
+              " " +
+              es(fx.c_status) +
+              " " +
+              es(fx.PrimaryKey)
+            ).toLowerCase();
+            if (hay.indexOf(term) >= 0) out.push(x);
+          }
+          render(out);
+        }
+
+        if (items.length) {
+          render(items);
+        } else {
+          statusEl.textContent = "No records found";
+          statusEl.className = "statusline err";
+        }
+        q.addEventListener("input", applyFilters);
+        fType.addEventListener("change", applyFilters);
+        fRecip.addEventListener("change", applyFilters);
+      })();
+    </script>
+  </body>
+</html>

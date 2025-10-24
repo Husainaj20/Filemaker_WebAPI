@@ -1,0 +1,28 @@
+# Node
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# macOS
+.DS_Store
+
+# Editor folders
+.vscode/
+.idea/
+
+# Build
+dist/
+
+# Misc
+coverage/
+
+# Ignore local asdf tool versions if you prefer to not commit them
+# (we DO want to commit .tool-versions for this project so it's intentionally not listed here)
