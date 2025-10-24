@@ -458,6 +458,20 @@
             fRecip.appendChild(o);
           });
         kpiTotal.textContent = items.length;
+        kpiTotal.textContent = items.length;
+
+        // currently selected status (green, blue, amber, red, gray) from the wheel
+        let selectedStatusKey = null;
+
+        // helper: derive the same status-key used for wheel from a c_status string
+        function statusKeyForString(s) {
+          s = lc(s);
+          if (s === "not sent" || s === "notsent") return "gray";
+          if (s.indexOf("pending") === 0) return "blue";
+          if (s.indexOf("complete") === 0 || s.indexOf("approved") >= 0) return "green";
+          if (s.indexOf("denied") === 0) return "red";
+          return "amber";
+        }
 
         // draw status wheel showing distribution across statuses
         function drawStatusWheel(items) {
@@ -466,7 +480,9 @@
           // categorize counts similarly to badgeClass
           const counts = { green: 0, blue: 0, amber: 0, red: 0, gray: 0 };
           for (let i = 0; i < items.length; i++) {
-            const s = lc((items[i].fieldData && items[i].fieldData.c_status) || "");
+            const s = lc(
+              (items[i].fieldData && items[i].fieldData.c_status) || ""
+            );
             if (s === "not sent" || s === "notsent") counts.gray++;
             else if (s.indexOf("pending") === 0) counts.blue++;
             else if (s.indexOf("complete") === 0 || s.indexOf("approved") >= 0)
@@ -525,13 +541,34 @@
             const end = start + angle;
             // leave a tiny gap between segments for visibility
             const gap = 1; // degrees
-            const pathD = describeArc(cx, cy, r, start + gap / 2, end - gap / 2);
-            const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            const pathD = describeArc(
+              cx,
+              cy,
+              r,
+              start + gap / 2,
+              end - gap / 2
+            );
+            const p = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "path"
+            );
             p.setAttribute("d", pathD);
             p.setAttribute("stroke", o.color);
-            p.setAttribute("stroke-width", "6");
+            // highlight selected segment
+            const isSelected = selectedStatusKey === o.key;
+            p.setAttribute("stroke-width", isSelected ? "8" : "6");
             p.setAttribute("fill", "none");
             p.setAttribute("stroke-linecap", "butt");
+            p.style.cursor = "pointer";
+            p.dataset.key = o.key;
+            p.addEventListener("click", function (e) {
+              // toggle selection: clicking same segment clears it
+              selectedStatusKey = selectedStatusKey === o.key ? null : o.key;
+              // reapply filters and redraw wheel (render will redraw again too)
+              applyFilters();
+              drawStatusWheel(items);
+              e.stopPropagation();
+            });
             seg.appendChild(p);
             start = end;
           }
@@ -633,6 +670,11 @@
               fx = x.fieldData || {};
             if (t && es(fx["Request Type"]) !== t) continue;
             if (rcv && es(fx.recipientName) !== rcv) continue;
+            // status filter from wheel (if selected)
+            if (typeof selectedStatusKey !== "undefined" && selectedStatusKey) {
+              const sKey = statusKeyForString(fx.c_status || "");
+              if (sKey !== selectedStatusKey) continue;
+            }
             if (!term) {
               out.push(x);
               continue;
