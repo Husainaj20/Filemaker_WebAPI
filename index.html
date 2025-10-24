@@ -77,9 +77,11 @@
       .parent {
         display: grid;
         grid-template-columns: 1fr 2fr; /* left narrow, right wider (similar to 4/8 ratio) */
-         grid-template-rows: 1fr; /* single row whose height defines both sides */
+        grid-template-rows: 1fr; /* single row whose height defines both sides */
         gap: 16px;
-        align-items: start;
+        align-items: stretch;
+        /* allow children to size correctly inside the grid */
+        min-height: 0;
       }
       /* left top (KPI/request) */
       .div1 {
@@ -93,17 +95,31 @@
       }
       /* right (recent activity) spans both rows */
       .div3 {
-         grid-column: 2;
-         grid-row: 1;
+        grid-column: 2;
+        grid-row: 1;
       }
-        /* leftStack will hold the two stacked cards and control their sizing */
-        .leftStack {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          height: 100%;
-        }
-        .leftStack .card { flex: 1 1 0; display: flex; flex-direction: column; }
+      /* leftStack will hold the two stacked cards and control their sizing */
+      .leftStack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        height: 100%;
+        /* allow flex children to shrink properly */
+        min-height: 0;
+      }
+      .leftStack .card {
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      /* make the right card stretch to match the total leftStack height (including gap) */
+      .div3 > .card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
       .card {
         background: #fff;
         border: 1px solid var(--border);
@@ -343,7 +359,10 @@
 
           <div class="div2">
             <div class="card padded">
-              <div class="muted" style="letter-spacing: 0.08em; font-size: 12px">
+              <div
+                class="muted"
+                style="letter-spacing: 0.08em; font-size: 12px"
+              >
                 DUPLICATE REQUESTS
               </div>
               <div id="duplicatesList" class="list" style="margin-top: 8px">
@@ -357,7 +376,11 @@
           <div class="card padded">
             <div
               class="muted"
-              style="letter-spacing: 0.08em; font-size: 12px; margin-bottom: 8px"
+              style="
+                letter-spacing: 0.08em;
+                font-size: 12px;
+                margin-bottom: 8px;
+              "
             >
               RECENT ACTIVITY
             </div>
