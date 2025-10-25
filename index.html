@@ -445,6 +445,48 @@
         height: 100%;
         background: var(--blue);
       }
+      /* Animation & token styles for expanded rows */
+      .req .compact .inline-fields > * {
+        transition: transform 220ms ease, opacity 200ms ease;
+      }
+      .req.open .compact .inline-fields > * {
+        transform: translateY(-8px);
+        opacity: 0.45;
+      }
+      .expanded {
+        overflow: hidden;
+        transition: max-height 260ms ease, opacity 200ms ease;
+        max-height: 0;
+        opacity: 0;
+      }
+      .req.open .expanded {
+        max-height: 800px; /* large enough for content */
+        opacity: 1;
+      }
+      .recipients {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .recipient-token {
+        background: #eef2ff;
+        border: 1px solid #bfdbfe;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .recipient-token button {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: var(--blue);
+        font-weight: 700;
+        padding: 0 4px;
+      }
       /* per-row task progress with section dots */
       .taskbar {
         display: flex;
@@ -1162,23 +1204,66 @@
                 <div class="expanded-form" style="margin-top:10px;display:flex;gap:12px;align-items:flex-start">
                   <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;">
                     ${isClearance ? `<div>${clearanceHtml}</div>` : ""}
-                    <label style="font-size:13px">Requested on: <input class="date-sent" type="date" value="${escapeHtml(
+                    <label style="font-size:13px">Request type:
+                      <select class="request-type-select sel" style="margin-left:8px">
+                        ${Object.keys(types)
+                          .map(
+                            (t) =>
+                              `<option value="${escapeHtml(t)}" ${
+                                escapeHtml(fd["Request Type"] || "") ===
+                                escapeHtml(t)
+                                  ? "selected"
+                                  : ""
+                              }>${escapeHtml(t)}</option>`
+                          )
+                          .join("")}
+                        ${
+                          fd["Request Type"] && !types[fd["Request Type"]]
+                            ? `<option value="${escapeHtml(
+                                fd["Request Type"]
+                              )}" selected>${escapeHtml(
+                                fd["Request Type"]
+                              )}</option>`
+                            : ""
+                        }
+                      </select>
+                    </label>
+
+                    <div>
+                      <label style="font-size:13px;display:block">Recipients:</label>
+                      <div class="recipients">
+                        <!-- tokens will be injected here -->
+                        <input class="recipient-input" type="text" placeholder="Add recipient and press Enter" value="" style="min-width:120px;padding:6px;border:1px solid var(--border);border-radius:8px" />
+                      </div>
+                    </div>
+
+                    <label style="font-size:13px">Request date: <input class="date-sent" type="date" value="${escapeHtml(
                       (fd.requestedOn || "").split("T")[0] || ""
                     )}"></label>
-                    <label style="font-size:13px">Recipient: <input class="recipient-input" type="text" value="${escapeHtml(
-                      fd.recipientName || ""
-                    )}"></label>
-                    <label style="font-size:13px">Date received: <input class="date-received" type="date" value="${escapeHtml(
+
+                    <div style="display:flex;gap:8px;align-items:center">
+                      <div style="flex:1">
+                        <label style="font-size:13px">Request files:</label>
+                        <div class="muted">${reqUploadHtml}</div>
+                      </div>
+                      <div style="flex:0 0 auto"><button type="button" class="change-req">Change</button></div>
+                    </div>
+                  </div>
+                  <div style="flex:0 0 320px;display:flex;flex-direction:column;gap:8px;">
+                    <label style="font-size:13px">Response date: <input class="date-received" type="date" value="${escapeHtml(
                       (fd.dateReceived || "").split("T")[0] || ""
                     )}"></label>
-                    <label style="font-size:13px">Delivered by: <input class="delivered-by" type="text" value="${escapeHtml(
+                    <div style="display:flex;gap:8px;align-items:center">
+                      <div style="flex:1">
+                        <label style="font-size:13px">Response files:</label>
+                        <div class="muted">${respUploadHtml}</div>
+                      </div>
+                      <div style="flex:0 0 auto"><button type="button" class="change-resp">Change</button></div>
+                    </div>
+                    <label style="font-size:13px">Received by: <input class="delivered-by" type="text" value="${escapeHtml(
                       fd.deliveredBy || ""
                     )}"></label>
-                  </div>
-                  <div style="flex:0 0 260px;display:flex;flex-direction:column;gap:8px;">
-                    <div>Request upload: <span class="muted">${reqUploadHtml}</span> <button type="button" class="change-req" style="margin-left:8px">Change</button></div>
-                    <div>Response upload: <span class="muted">${respUploadHtml}</span> <button type="button" class="change-resp" style="margin-left:8px">Change</button></div>
-                    <div>Status: <select class="status-select sel">${statusOptions
+                    <label style="font-size:13px">Approval status: <select class="status-select sel">${statusOptions
                       .map(
                         (s) =>
                           `<option value="${escapeHtml(s)}" ${
@@ -1187,11 +1272,15 @@
                               : ""
                           }>${escapeHtml(s)}</option>`
                       )
-                      .join("")}</select></div>
+                      .join("")}</select></label>
+                    <label style="font-size:13px">Notes:
+                      <textarea class="notes" rows="5" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">${escapeHtml(
+                        fd.Notes || fd.notes || ""
+                      )}</textarea>
+                    </label>
                     <div style="display:flex;gap:8px;margin-top:6px">
                       <button class="send-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--blue);color:#fff">Send Request</button>
-                      <button class="gen-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff">Generate Request</button>
-                      <button class="view-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff">View Request</button>
+                      <button class="cancel-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff">Cancel</button>
                     </div>
                   </div>
                 </div>
@@ -1218,6 +1307,20 @@
                 expBtn.textContent = open ? "Hide" : "Show";
               }
               if (open) {
+                // save a snapshot so Cancel can restore
+                try {
+                  card.dataset.snapshot = JSON.stringify({
+                    "Request Type": fd["Request Type"] || "",
+                    recipientName: fd.recipientName || "",
+                    requestedOn: fd.requestedOn || "",
+                    dateReceived: fd.dateReceived || "",
+                    deliveredBy: fd.deliveredBy || "",
+                    RequestUploadName: fd.RequestUploadName || "",
+                    ResponseUploadName: fd.ResponseUploadName || "",
+                    c_status: fd.c_status || "",
+                    Notes: fd.Notes || fd.notes || "",
+                  });
+                } catch (_) {}
                 const first = card.querySelector(
                   ".expanded input, .expanded select, .expanded button"
                 );
@@ -1281,6 +1384,209 @@
                 applyFilters();
               });
             }
+            // --- recipients tokenizer + extra expanded-field wiring (second render) ---
+            (function () {
+              const recContainer = card.querySelector(".recipients");
+              const recInput = card.querySelector(".recipient-input");
+              if (recContainer && recInput) {
+                const tokensWrap = document.createElement("div");
+                tokensWrap.style.display = "flex";
+                tokensWrap.style.gap = "6px";
+                tokensWrap.style.alignItems = "center";
+                recContainer.insertBefore(tokensWrap, recInput);
+
+                let tokens = (fd.recipientName || "")
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+
+                function renderTokens() {
+                  tokensWrap.innerHTML = tokens
+                    .map(
+                      (t, i) =>
+                        `<span class="recipient-token" data-i="${i}">${escapeHtml(
+                          t
+                        )}<button type="button" data-i="${i}">×</button></span>`
+                    )
+                    .join("");
+                  tokensWrap.querySelectorAll("button").forEach((b) =>
+                    b.addEventListener("click", function (ev) {
+                      ev.stopPropagation();
+                      const idx = Number(b.getAttribute("data-i"));
+                      if (!isNaN(idx)) {
+                        tokens.splice(idx, 1);
+                        fd.recipientName = tokens.join(", ");
+                        renderTokens();
+                        applyFilters();
+                      }
+                    })
+                  );
+                }
+
+                function addRecipient(name) {
+                  name = (name || "").trim();
+                  if (!name) return;
+                  tokens.push(name);
+                  fd.recipientName = tokens.join(", ");
+                  renderTokens();
+                  applyFilters();
+                }
+
+                renderTokens();
+
+                recInput.addEventListener("keydown", function (ev) {
+                  if (ev.key === "Enter" || ev.key === ",") {
+                    ev.preventDefault();
+                    const v = recInput.value.trim();
+                    if (v) addRecipient(v);
+                    recInput.value = "";
+                  } else if (ev.key === "Backspace" && recInput.value === "") {
+                    tokens.pop();
+                    fd.recipientName = tokens.join(", ");
+                    renderTokens();
+                    applyFilters();
+                  }
+                });
+              }
+
+              const reqTypeSel = card.querySelector(".request-type-select");
+              if (reqTypeSel) {
+                reqTypeSel.addEventListener("change", function () {
+                  fd["Request Type"] = reqTypeSel.value;
+                  applyFilters();
+                });
+              }
+
+              const notes = card.querySelector(".notes");
+              if (notes) {
+                notes.addEventListener("change", function (e) {
+                  fd.Notes = e.target.value;
+                });
+              }
+
+              const cancelBtn = card.querySelector(".cancel-btn");
+              if (cancelBtn) {
+                cancelBtn.addEventListener("click", function (e) {
+                  e.stopPropagation();
+                  const snap = card.dataset.snapshot;
+                  if (snap) {
+                    try {
+                      const saved = JSON.parse(snap);
+                      Object.keys(saved).forEach((k) => {
+                        fd[k] = saved[k];
+                      });
+                    } catch (_) {}
+                  }
+                  applyFilters();
+                });
+              }
+            })();
+
+            // --- recipients tokenizer + extra expanded-field wiring ---
+            (function () {
+              const recContainer = card.querySelector(".recipients");
+              const recInput = card.querySelector(".recipient-input");
+              if (recContainer && recInput) {
+                // insert a tokens wrapper before the input
+                const tokensWrap = document.createElement("div");
+                tokensWrap.style.display = "flex";
+                tokensWrap.style.gap = "6px";
+                tokensWrap.style.alignItems = "center";
+                recContainer.insertBefore(tokensWrap, recInput);
+
+                let tokens = (fd.recipientName || "")
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+
+                function renderTokens() {
+                  tokensWrap.innerHTML = tokens
+                    .map(
+                      (t, i) =>
+                        `<span class="recipient-token" data-i="${i}">${escapeHtml(
+                          t
+                        )}<button type="button" data-i="${i}">×</button></span>`
+                    )
+                    .join("");
+                  // wire remove buttons
+                  tokensWrap.querySelectorAll("button").forEach((b) =>
+                    b.addEventListener("click", function (ev) {
+                      ev.stopPropagation();
+                      const idx = Number(b.getAttribute("data-i"));
+                      if (!isNaN(idx)) {
+                        tokens.splice(idx, 1);
+                        fd.recipientName = tokens.join(", ");
+                        renderTokens();
+                        applyFilters();
+                      }
+                    })
+                  );
+                }
+
+                function addRecipient(name) {
+                  name = (name || "").trim();
+                  if (!name) return;
+                  tokens.push(name);
+                  fd.recipientName = tokens.join(", ");
+                  renderTokens();
+                  applyFilters();
+                }
+
+                renderTokens();
+
+                recInput.addEventListener("keydown", function (ev) {
+                  if (ev.key === "Enter" || ev.key === ",") {
+                    ev.preventDefault();
+                    const v = recInput.value.trim();
+                    if (v) addRecipient(v);
+                    recInput.value = "";
+                  } else if (ev.key === "Backspace" && recInput.value === "") {
+                    // remove last token
+                    tokens.pop();
+                    fd.recipientName = tokens.join(", ");
+                    renderTokens();
+                    applyFilters();
+                  }
+                });
+              }
+
+              // request type select wiring
+              const reqTypeSel = card.querySelector(".request-type-select");
+              if (reqTypeSel) {
+                reqTypeSel.addEventListener("change", function () {
+                  fd["Request Type"] = reqTypeSel.value;
+                  applyFilters();
+                });
+              }
+
+              // notes wiring
+              const notes = card.querySelector(".notes");
+              if (notes) {
+                notes.addEventListener("change", function (e) {
+                  fd.Notes = e.target.value;
+                });
+              }
+
+              // cancel button: restore snapshot and re-render
+              const cancelBtn = card.querySelector(".cancel-btn");
+              if (cancelBtn) {
+                cancelBtn.addEventListener("click", function (e) {
+                  e.stopPropagation();
+                  const snap = card.dataset.snapshot;
+                  if (snap) {
+                    try {
+                      const saved = JSON.parse(snap);
+                      // restore fields from snapshot
+                      Object.keys(saved).forEach((k) => {
+                        fd[k] = saved[k];
+                      });
+                    } catch (_) {}
+                  }
+                  // re-render filtered view (this will close expanded rows)
+                  applyFilters();
+                });
+              }
+            })();
 
             // expand/collapse wiring for the compact row
             const expBtn = card.querySelector(".row-expand");
@@ -1292,6 +1598,20 @@
                 expBtn.setAttribute("aria-expanded", String(open));
                 expBtn.textContent = open ? "Hide" : "Show";
                 if (open) {
+                  // save a snapshot so Cancel can restore
+                  try {
+                    card.dataset.snapshot = JSON.stringify({
+                      "Request Type": fd["Request Type"] || "",
+                      recipientName: fd.recipientName || "",
+                      requestedOn: fd.requestedOn || "",
+                      dateReceived: fd.dateReceived || "",
+                      deliveredBy: fd.deliveredBy || "",
+                      RequestUploadName: fd.RequestUploadName || "",
+                      ResponseUploadName: fd.ResponseUploadName || "",
+                      c_status: fd.c_status || "",
+                      Notes: fd.Notes || fd.notes || "",
+                    });
+                  } catch (_) {}
                   // focus first control in expanded area for accessibility
                   const first = card.querySelector(
                     ".expanded input, .expanded select, .expanded button"
@@ -1681,7 +2001,89 @@
                 </div>
               </div>
               <div class="expanded">
-                <!-- details cleared per request; title only visible -->
+                <div class="expanded-form" style="margin-top:10px;display:flex;gap:12px;align-items:flex-start">
+                  <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;">
+                    ${isClearance ? `<div>${clearanceHtml}</div>` : ""}
+                    <label style="font-size:13px">Request type:
+                      <select class="request-type-select sel" style="margin-left:8px">
+                        ${Object.keys(types)
+                          .map(
+                            (t) =>
+                              `<option value="${escapeHtml(t)}" ${
+                                escapeHtml(fd["Request Type"] || "") ===
+                                escapeHtml(t)
+                                  ? "selected"
+                                  : ""
+                              }>${escapeHtml(t)}</option>`
+                          )
+                          .join("")}
+                        ${
+                          fd["Request Type"] && !types[fd["Request Type"]]
+                            ? `<option value="${escapeHtml(
+                                fd["Request Type"]
+                              )}" selected>${escapeHtml(
+                                fd["Request Type"]
+                              )}</option>`
+                            : ""
+                        }
+                      </select>
+                    </label>
+
+                    <div>
+                      <label style="font-size:13px;display:block">Recipients:</label>
+                      <div class="recipients">
+                        <!-- tokens will be injected here -->
+                        <input class="recipient-input" type="text" placeholder="Add recipient and press Enter" value="" style="min-width:120px;padding:6px;border:1px solid var(--border);border-radius:8px" />
+                      </div>
+                    </div>
+
+                    <label style="font-size:13px">Request date: <input class="date-sent" type="date" value="${escapeHtml(
+                      (fd.requestedOn || "").split("T")[0] || ""
+                    )}"></label>
+
+                    <div style="display:flex;gap:8px;align-items:center">
+                      <div style="flex:1">
+                        <label style="font-size:13px">Request files:</label>
+                        <div class="muted">${reqUploadHtml}</div>
+                      </div>
+                      <div style="flex:0 0 auto"><button type="button" class="change-req">Change</button></div>
+                    </div>
+                  </div>
+                  <div style="flex:0 0 320px;display:flex;flex-direction:column;gap:8px;">
+                    <label style="font-size:13px">Response date: <input class="date-received" type="date" value="${escapeHtml(
+                      (fd.dateReceived || "").split("T")[0] || ""
+                    )}"></label>
+                    <div style="display:flex;gap:8px;align-items:center">
+                      <div style="flex:1">
+                        <label style="font-size:13px">Response files:</label>
+                        <div class="muted">${respUploadHtml}</div>
+                      </div>
+                      <div style="flex:0 0 auto"><button type="button" class="change-resp">Change</button></div>
+                    </div>
+                    <label style="font-size:13px">Received by: <input class="delivered-by" type="text" value="${escapeHtml(
+                      fd.deliveredBy || ""
+                    )}"></label>
+                    <label style="font-size:13px">Approval status: <select class="status-select sel">${statusOptions
+                      .map(
+                        (s) =>
+                          `<option value="${escapeHtml(s)}" ${
+                            escapeHtml(fd.c_status || "") === escapeHtml(s)
+                              ? "selected"
+                              : ""
+                          }>${escapeHtml(s)}</option>`
+                      )
+                      .join("")}</select></label>
+                    <label style="font-size:13px">Notes:
+                      <textarea class="notes" rows="5" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">${escapeHtml(
+                        fd.Notes || fd.notes || ""
+                      )}</textarea>
+                    </label>
+                    <div style="display:flex;gap:8px;margin-top:6px">
+                      <button class="send-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--blue);color:#fff">Send Request</button>
+                      <button class="cancel-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff">Cancel</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             `;
 
