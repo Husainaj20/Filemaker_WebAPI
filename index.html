@@ -1063,6 +1063,9 @@
             const respUpload = es(fd.ResponseUploadName || "");
             const statusText = es(fd.c_status || "Not Sent");
 
+            // small HTML snippets for uploads (used in expanded template)
+            // (defined later once for compact/expanded templates)
+
             // Compute task step completion
             const steps = [
               {
@@ -2214,12 +2217,14 @@
           try {
             render(out);
           } catch (err) {
-            console.error('render failed', err);
+            console.error("render failed", err);
             // show a helpful status in the UI and attempt to fallback
             try {
-              statusEl.textContent = 'Render error: ' + (err && err.message ? err.message : String(err));
-              statusEl.className = 'statusline err';
-              grid.innerHTML = '';
+              statusEl.textContent =
+                "Render error: " +
+                (err && err.message ? err.message : String(err));
+              statusEl.className = "statusline err";
+              grid.innerHTML = "";
               updateTasks([]);
               kpiTotal.textContent = items.length || 0;
             } catch (_) {}
