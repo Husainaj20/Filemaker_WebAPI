@@ -2211,7 +2211,19 @@
             ).toLowerCase();
             if (hay.indexOf(term) >= 0) out.push(x);
           }
-          render(out);
+          try {
+            render(out);
+          } catch (err) {
+            console.error('render failed', err);
+            // show a helpful status in the UI and attempt to fallback
+            try {
+              statusEl.textContent = 'Render error: ' + (err && err.message ? err.message : String(err));
+              statusEl.className = 'statusline err';
+              grid.innerHTML = '';
+              updateTasks([]);
+              kpiTotal.textContent = items.length || 0;
+            } catch (_) {}
+          }
         }
 
         if (items.length) {
