@@ -1063,9 +1063,6 @@
             const respUpload = es(fd.ResponseUploadName || "");
             const statusText = es(fd.c_status || "Not Sent");
 
-            // small HTML snippets for uploads (used in expanded template)
-            // (defined later once for compact/expanded templates)
-
             // Compute task step completion
             const steps = [
               {
@@ -1123,7 +1120,7 @@
               "Cancelled",
             ];
 
-            // compact single-line view (details kept in .expanded for future expansion)
+            // small helpers for displaying uploaded filenames in the expanded view
             const reqUploadHtml = reqUpload
               ? '<span style="color:var(--muted)">' +
                 escapeHtml(reqUpload) +
@@ -1134,6 +1131,8 @@
                 escapeHtml(respUpload) +
                 "</span>"
               : "—";
+
+            // compact single-line view (details kept in .expanded for future expansion)
             const stepsDots = steps
               .map(function (s) {
                 return (
