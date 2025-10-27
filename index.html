@@ -320,20 +320,209 @@
         min-width: 0;
       }
 
-      /* hide expanded controls/details for now; user will add expand later */
+      /* hide expanded controls/details by collapsing height; animate open/close */
       .req .expanded {
-        display: none;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 320ms ease, opacity 260ms ease;
+        opacity: 0;
+        padding-top: 0;
+      }
+      /* when a row has the 'open' class show expanded details (animated) */
+      .req.open .expanded {
+        max-height: 800px; /* large enough for expanded content */
+        opacity: 1;
         padding-top: 8px;
       }
-      /* when a row has the 'open' class show expanded details */
-      .req.open .expanded {
+
+      /* animate the expanded-form content sliding into place */
+      .req .expanded .expanded-form {
+        transform: translateY(-8px);
+        transition: transform 320ms ease, opacity 260ms ease;
+        opacity: 0;
+      }
+      .req.open .expanded .expanded-form {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      /* Modernized expanded card styling (scoped to .req to avoid global changes) */
+      .req .expanded {
+        padding: 8px 0 0 0;
+      }
+      .req .expanded .expanded-form {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 16px;
+        align-items: start;
+        padding: 14px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.9),
+          rgba(248, 250, 255, 0.9)
+        );
+        border-radius: 10px;
+        border: 1px solid rgba(15, 23, 42, 0.04);
+        box-shadow: 0 6px 20px rgba(2, 6, 23, 0.06);
+      }
+      /* Left column (request details) */
+      .req .expanded .expanded-form > div:first-child {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      /* Right column (response/details/actions) */
+      .req .expanded .expanded-form > div:last-child {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.8),
+          rgba(250, 250, 255, 0.8)
+        );
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(15, 23, 42, 0.03);
+      }
+      /* Form controls */
+      .req .expanded label {
+        font-size: 13px;
+        color: var(--muted);
         display: block;
+      }
+      .req .expanded input[type="text"],
+      .req .expanded input[type="date"],
+      .req .expanded select,
+      .req .expanded textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        background: #fff;
+        font-size: 13px;
+        color: var(--fg);
+      }
+      .req .expanded textarea {
+        resize: vertical;
+        min-height: 88px;
+      }
+      .req .expanded .upload-list,
+      .req .expanded .resp-upload-list {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .req .expanded .recipient-chips .badge {
+        background: #eef2ff;
+        color: var(--blue);
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 13px;
+      }
+
+      /* Buttons in expanded area */
+      .req .expanded .send-btn,
+      .req .expanded .cancel-btn,
+      .req .expanded .change-req,
+      .req .expanded .change-resp {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+        border: 1px solid rgba(2, 6, 23, 0.06);
+        background: #fff;
+      }
+      .req .expanded .send-btn {
+        background: var(--blue);
+        color: #fff;
+        border-color: transparent;
+      }
+      .req .expanded .cancel-btn {
+        background: #fff;
+        color: var(--fg);
+      }
+      .req .expanded .change-req,
+      .req .expanded .change-resp {
+        background: #fff;
+      }
+
+      /* small responsive adjustment */
+      @media (max-width: 900px) {
+        .req .expanded .expanded-form {
+          grid-template-columns: 1fr;
+        }
+        .req .expanded .expanded-form > div:last-child {
+          order: 2;
+        }
+      }
+
+      /* inline recipient in compact shifts away when opening so it appears to move down */
+      .req .inline-recipient {
+        transition: transform 320ms ease, opacity 240ms ease;
+        display: inline-block;
+      }
+      .req.open .inline-recipient {
+        transform: translateY(12px);
+        opacity: 0;
+      }
+      /* other compact inline fields animate the same way when the card opens */
+      .req .inline-requested,
+      .req .inline-req-upload-btn,
+      .req .inline-received,
+      .req .inline-resp-upload-btn,
+      .req .inline-next,
+      .req .inline-status {
+        transition: transform 320ms ease, opacity 240ms ease;
+        display: inline-block;
+      }
+      .req.open .inline-requested,
+      .req.open .inline-req-upload-btn,
+      .req.open .inline-received,
+      .req.open .inline-resp-upload-btn,
+      .req.open .inline-next,
+      .req.open .inline-status {
+        transform: translateY(12px);
+        opacity: 0;
+      }
+
+      /* keep status visible when the card opens (it should move down but not fade out) */
+      .req.open .inline-status {
+        opacity: 1 !important;
+        transform: translateY(12px);
       }
       .req .compact {
         display: flex;
         align-items: center;
         gap: 12px;
         width: 100%;
+      }
+      /* ensure the badge column and inline fields align across rows */
+      .inline-fields > div:first-child {
+        flex: 0 0 120px; /* fixed column for badge/status */
+        display: flex;
+        align-items: center; /* center vertically by default; animation will move it */
+        justify-content: center; /* center the status badge horizontally */
+      }
+      /* make recipient column consistent width */
+      .inline-field.inline-recipient {
+        min-width: 180px;
+        max-width: 260px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      /* date/upload columns consistent and centered */
+      .inline-field.inline-requested,
+      .inline-field.inline-received {
+        width: 120px;
+        text-align: center;
+        font-weight: 600;
+      }
+      .inline-upload.dragover button.req-upload-btn,
+      .inline-upload.dragover button.resp-upload-btn {
+        background: #eef6ff;
+        border-color: var(--blue);
       }
       .compact .meta-inline {
         color: var(--muted);
@@ -444,48 +633,6 @@
         display: block;
         height: 100%;
         background: var(--blue);
-      }
-      /* Animation & token styles for expanded rows */
-      .req .compact .inline-fields > * {
-        transition: transform 220ms ease, opacity 200ms ease;
-      }
-      .req.open .compact .inline-fields > * {
-        transform: translateY(-8px);
-        opacity: 0.45;
-      }
-      .expanded {
-        overflow: hidden;
-        transition: max-height 260ms ease, opacity 200ms ease;
-        max-height: 0;
-        opacity: 0;
-      }
-      .req.open .expanded {
-        max-height: 800px; /* large enough for content */
-        opacity: 1;
-      }
-      .recipients {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-      }
-      .recipient-token {
-        background: #eef2ff;
-        border: 1px solid #bfdbfe;
-        padding: 4px 8px;
-        border-radius: 999px;
-        font-size: 12px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .recipient-token button {
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        color: var(--blue);
-        font-weight: 700;
-        padding: 0 4px;
       }
       /* per-row task progress with section dots */
       .taskbar {
@@ -984,6 +1131,24 @@
         for (let i = 0; i < items.length; i++) {
           const f = (items[i].fieldData = items[i].fieldData || {});
           const rt = (f["Request Type"] || "").toLowerCase();
+          // normalize statuses that contain a separator (e.g. "Pending - Submitted")
+          // by keeping only the last/second segment (the part after the separator)
+          if (f.c_status) {
+            try {
+              const parts = String(f.c_status)
+                .split(/[-\/\:\u2192]/)
+                .map(function (s) {
+                  return (s || "").trim();
+                })
+                .filter(Boolean);
+              if (parts.length >= 2) {
+                // use the last segment (covers cases like "Pending - Submitted")
+                f.c_status = parts[parts.length - 1];
+              }
+            } catch (e) {
+              // ignore and leave original status if parsing fails
+            }
+          }
           if (rt.indexOf("clearance") >= 0) {
             if (!f.ClearanceType) {
               // assign a mock clearance subtype if missing
@@ -1019,6 +1184,40 @@
           if (f["Request Type"]) types[f["Request Type"]] = 1;
           if (f.recipientName) recips[f.recipientName] = 1;
         }
+        // helper: move the inline status element into the expanded area when the card opens,
+        // and move it back into the compact inline-fields when it closes.
+        function relocateStatus(card, open) {
+          if (!card) return;
+          try {
+            const inlineStatus = card.querySelector(".inline-status");
+            const inlineFields = card.querySelector(".inline-fields");
+            const rightCol = card.querySelector(
+              ".expanded .expanded-form > div:last-child"
+            );
+            if (!inlineStatus) return;
+            if (open) {
+              // move into expanded right column if present
+              if (rightCol && !rightCol.contains(inlineStatus)) {
+                rightCol.appendChild(inlineStatus);
+              } else if (
+                !rightCol &&
+                !card.querySelector(".expanded").contains(inlineStatus)
+              ) {
+                card.querySelector(".expanded").appendChild(inlineStatus);
+              }
+            } else {
+              // move back to the compact inline-fields as first child
+              if (inlineFields && !inlineFields.contains(inlineStatus)) {
+                inlineFields.insertBefore(
+                  inlineStatus,
+                  inlineFields.firstChild
+                );
+              }
+            }
+          } catch (e) {
+            // swallow errors — non-critical
+          }
+        }
         // -----------------------
         // Renderer (produces the list of request cards)
         // Note: there are two similar render blocks for slightly different
@@ -1032,6 +1231,16 @@
             const p = pct(rec);
             const card = document.createElement("div");
             card.className = "card req";
+            // stable id used to preserve open/expanded state across re-renders
+            card.setAttribute(
+              "data-record-id",
+              String(fd.PrimaryKey || rec.recordId || "")
+            );
+            // stable id used to preserve open/expanded state across re-renders
+            card.setAttribute(
+              "data-record-id",
+              String(fd.PrimaryKey || rec.recordId || "")
+            );
 
             // Build fields to display
             const titleText = es(fd["Request Type"] || "Request");
@@ -1120,7 +1329,7 @@
               "Cancelled",
             ];
 
-            // small helpers for displaying uploaded filenames in the expanded view
+            // compact single-line view (details kept in .expanded for future expansion)
             const reqUploadHtml = reqUpload
               ? '<span style="color:var(--muted)">' +
                 escapeHtml(reqUpload) +
@@ -1131,8 +1340,6 @@
                 escapeHtml(respUpload) +
                 "</span>"
               : "—";
-
-            // compact single-line view (details kept in .expanded for future expansion)
             const stepsDots = steps
               .map(function (s) {
                 return (
@@ -1148,7 +1355,7 @@
             card.innerHTML = `
               <div class="compact">
                 <div style="flex:1 1 0;min-width:0;display:flex;align-items:center;gap:10px;">
-                  <div style="min-width:0;display:flex;align-items:center;gap:8px;">
+                    <div class="inline-status" style="min-width:0;display:flex;align-items:center;gap:8px;">
                     <div class="title"><h3>${escapeHtml(titleText)}</h3></div>
                     <div class="inline-fields" style="display:flex;align-items:center;gap:10px;">
                       <div style="display:flex;align-items:center;gap:8px">
@@ -1158,15 +1365,15 @@
               statusText
             )}</span>
                       </div>
-                      <div class="inline-field" title="Recipient">${escapeHtml(
+                      <div class="inline-field inline-recipient" title="Recipient">${escapeHtml(
                         recipient || "—"
                       )}</div>
-                      <div class="inline-field" title="Requested">${
+                      <div class="inline-field inline-requested" title="Requested">${
                         dateSent && reqUpload
                           ? escapeHtml(dateSent)
-                          : '<span class="upload-msg">Upload request document</span>'
+                          : '<span class="upload-msg">Upload request</span>'
                       }</div>
-                      <div class="inline-upload" style="position:relative">
+                      <div class="inline-upload inline-req-upload-btn" style="position:relative">
                         <input class="req-upload" data-idx="${j}" type="file" style="position:absolute;left:0;top:0;opacity:0;width:1px;height:1px" />
                         <button type="button" class="req-upload-btn" title="Request upload" aria-label="Upload request document">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1176,12 +1383,12 @@
                           </svg>
                         </button>
                       </div>
-                      <div class="inline-field" title="Received">${
+                      <div class="inline-field inline-received" title="Received">${
                         dateReceived && respUpload
                           ? escapeHtml(dateReceived)
-                          : '<span class="upload-msg">Upload response document</span>'
+                          : '<span class="upload-msg">Upload response</span>'
                       }</div>
-                      <div class="inline-upload" style="position:relative">
+                      <div class="inline-upload inline-resp-upload-btn" style="position:relative">
                         <input class="resp-upload" data-idx="${j}" type="file" style="position:absolute;left:0;top:0;opacity:0;width:1px;height:1px" />
                         <button type="button" class="resp-upload-btn" title="Response upload" aria-label="Upload response document">
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1191,7 +1398,7 @@
                           </svg>
                         </button>
                       </div>
-                      <div class="inline-field" title="Next" style="font-weight:600">${
+                      <div class="inline-field inline-next" title="Next" style="font-weight:600">${
                         nextStep ? escapeHtml(nextStep.label) : "—"
                       }</div>
                       <div class="inline-field" style="min-width:56px;text-align:right;font-weight:700">${p}%</div>
@@ -1202,91 +1409,140 @@
                   <button class="row-expand" aria-expanded="false" title="Show details" style="flex:0 0 auto; margin-left:8px; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:#fff; font-size:12px">Show</button>
                 </div>
               </div>
-              <div class="expanded">
-                <div class="expanded-form" style="margin-top:10px;display:flex;gap:12px;align-items:flex-start">
-                  <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;">
-                    ${isClearance ? `<div>${clearanceHtml}</div>` : ""}
-                    <label style="font-size:13px">Request type:
-                      <select class="request-type-select sel" style="margin-left:8px">
-                        ${Object.keys(types)
-                          .map(
-                            (t) =>
-                              `<option value="${escapeHtml(t)}" ${
-                                escapeHtml(fd["Request Type"] || "") ===
-                                escapeHtml(t)
-                                  ? "selected"
-                                  : ""
-                              }>${escapeHtml(t)}</option>`
+                <div class="expanded">
+                  <div class="expanded-form" style="margin-top:10px;display:flex;gap:12px;align-items:flex-start">
+                    <!-- Left column: Request Details -->
+                    <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;">
+                      <div style="font-weight:700;margin-bottom:6px">Request details</div>
+                      ${isClearance ? `<div>${clearanceHtml}</div>` : ""}
+                      <label style="font-size:13px">Request Type:
+                        <select class="request-type sel">
+                          ${Object.keys(types)
+                            .map(
+                              (t) =>
+                                `<option value="${escapeHtml(t)}" ${
+                                  escapeHtml(fd["Request Type"] || "") ===
+                                  escapeHtml(t)
+                                    ? "selected"
+                                    : ""
+                                }>${escapeHtml(t)}</option>`
+                            )
+                            .join("")}
+                        </select>
+                      </label>
+
+                      <label style="font-size:13px">Recipients:</label>
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        <div class="recipient-chips" style="display:flex;gap:6px;flex-wrap:wrap">
+                          ${(fd.recipientNames && fd.recipientNames.join
+                            ? fd.recipientNames
+                            : fd.recipientName
+                            ? fd.recipientName
+                                .split(";")
+                                .map((s) => s.trim())
+                                .filter(Boolean)
+                            : []
                           )
-                          .join("")}
-                        ${
-                          fd["Request Type"] && !types[fd["Request Type"]]
-                            ? `<option value="${escapeHtml(
-                                fd["Request Type"]
-                              )}" selected>${escapeHtml(
-                                fd["Request Type"]
-                              )}</option>`
-                            : ""
-                        }
-                      </select>
-                    </label>
+                            .map(
+                              (r) =>
+                                `<span class="badge b-gray" style="display:inline-flex;align-items:center;gap:6px">${escapeHtml(
+                                  r
+                                )}</span>`
+                            )
+                            .join("")}
+                        </div>
+                        <div style="flex:1;min-width:160px">
+                          <input list="datalist-recip-${j}" class="recipient-add" placeholder="Add recipient and press Enter" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px" />
+                          <datalist id="datalist-recip-${j}">
+                            ${Object.keys(recips)
+                              .map((r) => `<option value="${escapeHtml(r)}">`)
+                              .join("")}
+                          </datalist>
+                        </div>
+                      </div>
 
-                    <div>
-                      <label style="font-size:13px;display:block">Recipients:</label>
-                      <div class="recipients">
-                        <!-- tokens will be injected here -->
-                        <input class="recipient-input" type="text" placeholder="Add recipient and press Enter" value="" style="min-width:120px;padding:6px;border:1px solid var(--border);border-radius:8px" />
+                      <label style="font-size:13px">Request date: <input class="date-sent" type="date" value="${escapeHtml(
+                        (fd.requestedOn || "").split("T")[0] || ""
+                      )}"></label>
+
+                      <div style="margin-top:6px">Request uploads:
+                        <div class="upload-list muted" style="margin-top:6px">${
+                          reqUpload
+                            ? escapeHtml(reqUpload)
+                            : '<span class="upload-msg">No request file</span>'
+                        }</div>
+                        <div style="margin-top:6px"><button type="button" class="change-req" style="padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:#fff">Change / Upload</button></div>
                       </div>
                     </div>
 
-                    <label style="font-size:13px">Request date: <input class="date-sent" type="date" value="${escapeHtml(
-                      (fd.requestedOn || "").split("T")[0] || ""
-                    )}"></label>
+                    <!-- Right column: Response Details + Actions -->
+                    <div style="flex:0 0 360px;display:flex;flex-direction:column;gap:8px;">
+                      <div style="font-weight:700;margin-bottom:6px">Response details</div>
+                      <label style="font-size:13px">Response date: <input class="date-received" type="date" value="${escapeHtml(
+                        (fd.dateReceived || "").split("T")[0] || ""
+                      )}"></label>
 
-                    <div style="display:flex;gap:8px;align-items:center">
-                      <div style="flex:1">
-                        <label style="font-size:13px">Request files:</label>
-                        <div class="muted">${reqUploadHtml}</div>
+                      <div>Response uploads:
+                        <div class="resp-upload-list muted" style="margin-top:6px">${
+                          respUpload
+                            ? escapeHtml(respUpload)
+                            : '<span class="upload-msg">No response file</span>'
+                        }</div>
+                        <div style="margin-top:6px"><button type="button" class="change-resp" style="padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:#fff">Change / Upload</button></div>
                       </div>
-                      <div style="flex:0 0 auto"><button type="button" class="change-req">Change</button></div>
-                    </div>
-                  </div>
-                  <div style="flex:0 0 320px;display:flex;flex-direction:column;gap:8px;">
-                    <label style="font-size:13px">Response date: <input class="date-received" type="date" value="${escapeHtml(
-                      (fd.dateReceived || "").split("T")[0] || ""
-                    )}"></label>
-                    <div style="display:flex;gap:8px;align-items:center">
-                      <div style="flex:1">
-                        <label style="font-size:13px">Response files:</label>
-                        <div class="muted">${respUploadHtml}</div>
+
+                      <label style="font-size:13px">Received by: <input class="delivered-by" type="text" value="${escapeHtml(
+                        fd.deliveredBy || ""
+                      )}"></label>
+
+                      <label style="font-size:13px">Approval Status:
+                        <select class="status-select sel">
+                          ${statusOptions
+                            .map(
+                              (s) =>
+                                `<option value="${escapeHtml(s)}" ${
+                                  escapeHtml(fd.c_status || "") ===
+                                  escapeHtml(s)
+                                    ? "selected"
+                                    : ""
+                                }>${escapeHtml(s)}</option>`
+                            )
+                            .join("")}
+                        </select>
+                      </label>
+
+                      <label style="font-size:13px">Notes:
+                        <textarea class="notes" rows="4" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">${escapeHtml(
+                          fd.notes || fd.Notes || ""
+                        )}</textarea>
+                      </label>
+
+                      <div class="email-panel" style="margin-top:6px;">
+                        <div style="font-weight:700;margin-bottom:6px">Email Request</div>
+                        <label>To: <input class="email-to" type="email" value="${escapeHtml(
+                          fd.emailTo || fd.recipientEmail || ""
+                        )}" placeholder="recipient@example.com"></label>
+                        <label>CC: <input class="email-cc" type="text" placeholder="cc@example.com, cc2@example.com"></label>
+                        <label>Subject: <input class="email-subject" type="text" value="${escapeHtml(
+                          "Request: " + (fd["Request Type"] || titleText)
+                        )}"></label>
+                        <label>Message: <textarea class="email-body">${escapeHtml(
+                          fd.emailBody || "Please find the request attached."
+                        )}</textarea></label>
+                        <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+                          <button type="button" class="send-email-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--blue);color:#fff">Send Email</button>
+                          <button type="button" class="cancel-email-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff">Cancel</button>
+                          <div class="email-sent-msg" style="margin-left:8px;color:var(--green);font-weight:600"></div>
+                        </div>
                       </div>
-                      <div style="flex:0 0 auto"><button type="button" class="change-resp">Change</button></div>
-                    </div>
-                    <label style="font-size:13px">Received by: <input class="delivered-by" type="text" value="${escapeHtml(
-                      fd.deliveredBy || ""
-                    )}"></label>
-                    <label style="font-size:13px">Approval status: <select class="status-select sel">${statusOptions
-                      .map(
-                        (s) =>
-                          `<option value="${escapeHtml(s)}" ${
-                            escapeHtml(fd.c_status || "") === escapeHtml(s)
-                              ? "selected"
-                              : ""
-                          }>${escapeHtml(s)}</option>`
-                      )
-                      .join("")}</select></label>
-                    <label style="font-size:13px">Notes:
-                      <textarea class="notes" rows="5" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">${escapeHtml(
-                        fd.Notes || fd.notes || ""
-                      )}</textarea>
-                    </label>
-                    <div style="display:flex;gap:8px;margin-top:6px">
-                      <button class="send-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--blue);color:#fff">Send Request</button>
-                      <button class="cancel-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff">Cancel</button>
+
+                      <div style="display:flex;gap:8px;margin-top:6px">
+                        <button class="send-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--blue);color:#fff">Send Request</button>
+                        <button class="cancel-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff">Cancel</button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
             `;
 
             // clicking the card should toggle the expanded view (do not open FileMaker)
@@ -1304,25 +1560,15 @@
               // toggle the expanded state for this card instead of navigating to FileMaker
               const expBtn = card.querySelector(".row-expand");
               const open = card.classList.toggle("open");
+              // relocate status badge into expanded area when opening, and back when closing
+              try {
+                relocateStatus(card, open);
+              } catch (e) {}
               if (expBtn) {
                 expBtn.setAttribute("aria-expanded", String(open));
                 expBtn.textContent = open ? "Hide" : "Show";
               }
               if (open) {
-                // save a snapshot so Cancel can restore
-                try {
-                  card.dataset.snapshot = JSON.stringify({
-                    "Request Type": fd["Request Type"] || "",
-                    recipientName: fd.recipientName || "",
-                    requestedOn: fd.requestedOn || "",
-                    dateReceived: fd.dateReceived || "",
-                    deliveredBy: fd.deliveredBy || "",
-                    RequestUploadName: fd.RequestUploadName || "",
-                    ResponseUploadName: fd.ResponseUploadName || "",
-                    c_status: fd.c_status || "",
-                    Notes: fd.Notes || fd.notes || "",
-                  });
-                } catch (_) {}
                 const first = card.querySelector(
                   ".expanded input, .expanded select, .expanded button"
                 );
@@ -1386,209 +1632,162 @@
                 applyFilters();
               });
             }
-            // --- recipients tokenizer + extra expanded-field wiring (second render) ---
-            (function () {
-              const recContainer = card.querySelector(".recipients");
-              const recInput = card.querySelector(".recipient-input");
-              if (recContainer && recInput) {
-                const tokensWrap = document.createElement("div");
-                tokensWrap.style.display = "flex";
-                tokensWrap.style.gap = "6px";
-                tokensWrap.style.alignItems = "center";
-                recContainer.insertBefore(tokensWrap, recInput);
 
-                let tokens = (fd.recipientName || "")
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean);
-
-                function renderTokens() {
-                  tokensWrap.innerHTML = tokens
-                    .map(
-                      (t, i) =>
-                        `<span class="recipient-token" data-i="${i}">${escapeHtml(
-                          t
-                        )}<button type="button" data-i="${i}">×</button></span>`
-                    )
-                    .join("");
-                  tokensWrap.querySelectorAll("button").forEach((b) =>
-                    b.addEventListener("click", function (ev) {
-                      ev.stopPropagation();
-                      const idx = Number(b.getAttribute("data-i"));
-                      if (!isNaN(idx)) {
-                        tokens.splice(idx, 1);
-                        fd.recipientName = tokens.join(", ");
-                        renderTokens();
-                        applyFilters();
-                      }
-                    })
-                  );
-                }
-
-                function addRecipient(name) {
-                  name = (name || "").trim();
-                  if (!name) return;
-                  tokens.push(name);
-                  fd.recipientName = tokens.join(", ");
-                  renderTokens();
-                  applyFilters();
-                }
-
-                renderTokens();
-
-                recInput.addEventListener("keydown", function (ev) {
-                  if (ev.key === "Enter" || ev.key === ",") {
-                    ev.preventDefault();
-                    const v = recInput.value.trim();
-                    if (v) addRecipient(v);
-                    recInput.value = "";
-                  } else if (ev.key === "Backspace" && recInput.value === "") {
-                    tokens.pop();
-                    fd.recipientName = tokens.join(", ");
-                    renderTokens();
-                    applyFilters();
+            // email send wiring (inline in expanded card)
+            var sendEmailBtn = card.querySelector(".send-email-btn");
+            if (sendEmailBtn) {
+              var toIn = card.querySelector(".email-to");
+              var ccIn = card.querySelector(".email-cc");
+              var subjIn = card.querySelector(".email-subject");
+              var bodyIn = card.querySelector(".email-body");
+              var sentMsg = card.querySelector(".email-sent-msg");
+              sendEmailBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                const to = toIn && toIn.value && toIn.value.trim();
+                if (!to) {
+                  if (sentMsg) {
+                    sentMsg.textContent = "Enter recipient";
+                    sentMsg.style.color = "var(--amber)";
+                    setTimeout(() => (sentMsg.textContent = ""), 3000);
                   }
-                });
-              }
-
-              const reqTypeSel = card.querySelector(".request-type-select");
-              if (reqTypeSel) {
-                reqTypeSel.addEventListener("change", function () {
-                  fd["Request Type"] = reqTypeSel.value;
-                  applyFilters();
-                });
-              }
-
-              const notes = card.querySelector(".notes");
-              if (notes) {
-                notes.addEventListener("change", function (e) {
-                  fd.Notes = e.target.value;
-                });
-              }
-
-              const cancelBtn = card.querySelector(".cancel-btn");
-              if (cancelBtn) {
-                cancelBtn.addEventListener("click", function (e) {
+                  return;
+                }
+                fd.emailTo = to;
+                fd.emailCC = (ccIn && ccIn.value) || "";
+                fd.emailSubject = (subjIn && subjIn.value) || "";
+                fd.emailBody = (bodyIn && bodyIn.value) || "";
+                fd.emailSentAt = new Date().toISOString();
+                // mark as submitted when emailed
+                fd.c_status = fd.c_status || "Submitted";
+                if (sentMsg) {
+                  sentMsg.textContent = "Email sent";
+                  sentMsg.style.color = "var(--green)";
+                  setTimeout(() => (sentMsg.textContent = ""), 3000);
+                }
+                applyFilters();
+              });
+              var cancelEmailBtn = card.querySelector(".cancel-email-btn");
+              if (cancelEmailBtn) {
+                cancelEmailBtn.addEventListener("click", function (e) {
                   e.stopPropagation();
-                  const snap = card.dataset.snapshot;
-                  if (snap) {
-                    try {
-                      const saved = JSON.parse(snap);
-                      Object.keys(saved).forEach((k) => {
-                        fd[k] = saved[k];
-                      });
-                    } catch (_) {}
+                  if (toIn) toIn.value = "";
+                  if (ccIn) ccIn.value = "";
+                  if (subjIn) subjIn.value = "";
+                  if (bodyIn) bodyIn.value = "";
+                  if (sentMsg) sentMsg.textContent = "";
+                });
+              }
+            }
+
+            // email send wiring (inline in expanded card)
+            var sendEmailBtn = card.querySelector(".send-email-btn");
+            if (sendEmailBtn) {
+              var toIn = card.querySelector(".email-to");
+              var ccIn = card.querySelector(".email-cc");
+              var subjIn = card.querySelector(".email-subject");
+              var bodyIn = card.querySelector(".email-body");
+              var sentMsg = card.querySelector(".email-sent-msg");
+              sendEmailBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                const to = toIn && toIn.value && toIn.value.trim();
+                if (!to) {
+                  if (sentMsg) {
+                    sentMsg.textContent = "Enter recipient";
+                    sentMsg.style.color = "var(--amber)";
+                    setTimeout(() => (sentMsg.textContent = ""), 3000);
                   }
-                  applyFilters();
-                });
-              }
-            })();
-
-            // --- recipients tokenizer + extra expanded-field wiring ---
-            (function () {
-              const recContainer = card.querySelector(".recipients");
-              const recInput = card.querySelector(".recipient-input");
-              if (recContainer && recInput) {
-                // insert a tokens wrapper before the input
-                const tokensWrap = document.createElement("div");
-                tokensWrap.style.display = "flex";
-                tokensWrap.style.gap = "6px";
-                tokensWrap.style.alignItems = "center";
-                recContainer.insertBefore(tokensWrap, recInput);
-
-                let tokens = (fd.recipientName || "")
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean);
-
-                function renderTokens() {
-                  tokensWrap.innerHTML = tokens
-                    .map(
-                      (t, i) =>
-                        `<span class="recipient-token" data-i="${i}">${escapeHtml(
-                          t
-                        )}<button type="button" data-i="${i}">×</button></span>`
-                    )
-                    .join("");
-                  // wire remove buttons
-                  tokensWrap.querySelectorAll("button").forEach((b) =>
-                    b.addEventListener("click", function (ev) {
-                      ev.stopPropagation();
-                      const idx = Number(b.getAttribute("data-i"));
-                      if (!isNaN(idx)) {
-                        tokens.splice(idx, 1);
-                        fd.recipientName = tokens.join(", ");
-                        renderTokens();
-                        applyFilters();
-                      }
-                    })
-                  );
+                  return;
                 }
-
-                function addRecipient(name) {
-                  name = (name || "").trim();
-                  if (!name) return;
-                  tokens.push(name);
-                  fd.recipientName = tokens.join(", ");
-                  renderTokens();
-                  applyFilters();
+                fd.emailTo = to;
+                fd.emailCC = (ccIn && ccIn.value) || "";
+                fd.emailSubject = (subjIn && subjIn.value) || "";
+                fd.emailBody = (bodyIn && bodyIn.value) || "";
+                fd.emailSentAt = new Date().toISOString();
+                // mark as submitted when emailed
+                fd.c_status = fd.c_status || "Submitted";
+                if (sentMsg) {
+                  sentMsg.textContent = "Email sent";
+                  sentMsg.style.color = "var(--green)";
+                  setTimeout(() => (sentMsg.textContent = ""), 3000);
                 }
-
-                renderTokens();
-
-                recInput.addEventListener("keydown", function (ev) {
-                  if (ev.key === "Enter" || ev.key === ",") {
-                    ev.preventDefault();
-                    const v = recInput.value.trim();
-                    if (v) addRecipient(v);
-                    recInput.value = "";
-                  } else if (ev.key === "Backspace" && recInput.value === "") {
-                    // remove last token
-                    tokens.pop();
-                    fd.recipientName = tokens.join(", ");
-                    renderTokens();
-                    applyFilters();
-                  }
-                });
-              }
-
-              // request type select wiring
-              const reqTypeSel = card.querySelector(".request-type-select");
-              if (reqTypeSel) {
-                reqTypeSel.addEventListener("change", function () {
-                  fd["Request Type"] = reqTypeSel.value;
-                  applyFilters();
-                });
-              }
-
-              // notes wiring
-              const notes = card.querySelector(".notes");
-              if (notes) {
-                notes.addEventListener("change", function (e) {
-                  fd.Notes = e.target.value;
-                });
-              }
-
-              // cancel button: restore snapshot and re-render
-              const cancelBtn = card.querySelector(".cancel-btn");
-              if (cancelBtn) {
-                cancelBtn.addEventListener("click", function (e) {
+                applyFilters();
+              });
+              var cancelEmailBtn = card.querySelector(".cancel-email-btn");
+              if (cancelEmailBtn) {
+                cancelEmailBtn.addEventListener("click", function (e) {
                   e.stopPropagation();
-                  const snap = card.dataset.snapshot;
-                  if (snap) {
-                    try {
-                      const saved = JSON.parse(snap);
-                      // restore fields from snapshot
-                      Object.keys(saved).forEach((k) => {
-                        fd[k] = saved[k];
-                      });
-                    } catch (_) {}
-                  }
-                  // re-render filtered view (this will close expanded rows)
-                  applyFilters();
+                  if (toIn) toIn.value = "";
+                  if (ccIn) ccIn.value = "";
+                  if (subjIn) subjIn.value = "";
+                  if (bodyIn) bodyIn.value = "";
+                  if (sentMsg) sentMsg.textContent = "";
                 });
               }
-            })();
+            }
+
+            // wire inline upload buttons to the hidden inputs and enable drag/drop
+            var reqBtn = card.querySelector(".req-upload-btn");
+            if (reqBtn) {
+              reqBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                const rIn = card.querySelector(".req-upload");
+                if (rIn) rIn.click();
+              });
+            }
+            var respBtn = card.querySelector(".resp-upload-btn");
+            if (respBtn) {
+              respBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                const rpIn = card.querySelector(".resp-upload");
+                if (rpIn) rpIn.click();
+              });
+            }
+            const reqWrap = card.querySelector(".inline-req-upload-btn");
+            if (reqWrap) {
+              reqWrap.addEventListener("dragover", function (e) {
+                e.preventDefault();
+                reqWrap.classList.add("dragover");
+              });
+              reqWrap.addEventListener("dragleave", function (e) {
+                reqWrap.classList.remove("dragover");
+              });
+              reqWrap.addEventListener("drop", function (e) {
+                e.preventDefault();
+                reqWrap.classList.remove("dragover");
+                const f =
+                  e.dataTransfer &&
+                  e.dataTransfer.files &&
+                  e.dataTransfer.files[0];
+                if (f) {
+                  fd.RequestUploadName = f.name;
+                  fd.requestUploadAt = new Date().toISOString();
+                  applyFilters();
+                }
+              });
+            }
+            const respWrap = card.querySelector(".inline-resp-upload-btn");
+            if (respWrap) {
+              respWrap.addEventListener("dragover", function (e) {
+                e.preventDefault();
+                respWrap.classList.add("dragover");
+              });
+              respWrap.addEventListener("dragleave", function (e) {
+                respWrap.classList.remove("dragover");
+              });
+              respWrap.addEventListener("drop", function (e) {
+                e.preventDefault();
+                respWrap.classList.remove("dragover");
+                const f =
+                  e.dataTransfer &&
+                  e.dataTransfer.files &&
+                  e.dataTransfer.files[0];
+                if (f) {
+                  fd.ResponseUploadName = f.name;
+                  fd.responseUploadAt = new Date().toISOString();
+                  applyFilters();
+                }
+              });
+            }
 
             // expand/collapse wiring for the compact row
             const expBtn = card.querySelector(".row-expand");
@@ -1597,23 +1796,13 @@
                 // don't trigger deep-link navigation when toggling
                 e.stopPropagation();
                 const open = card.classList.toggle("open");
+                // relocate status badge into expanded area when opening, and back when closing
+                try {
+                  relocateStatus(card, open);
+                } catch (e) {}
                 expBtn.setAttribute("aria-expanded", String(open));
                 expBtn.textContent = open ? "Hide" : "Show";
                 if (open) {
-                  // save a snapshot so Cancel can restore
-                  try {
-                    card.dataset.snapshot = JSON.stringify({
-                      "Request Type": fd["Request Type"] || "",
-                      recipientName: fd.recipientName || "",
-                      requestedOn: fd.requestedOn || "",
-                      dateReceived: fd.dateReceived || "",
-                      deliveredBy: fd.deliveredBy || "",
-                      RequestUploadName: fd.RequestUploadName || "",
-                      ResponseUploadName: fd.ResponseUploadName || "",
-                      c_status: fd.c_status || "",
-                      Notes: fd.Notes || fd.notes || "",
-                    });
-                  } catch (_) {}
                   // focus first control in expanded area for accessibility
                   const first = card.querySelector(
                     ".expanded input, .expanded select, .expanded button"
@@ -1624,7 +1813,7 @@
             }
 
             // wire small inline upload buttons to the hidden inputs (prevent card click)
-            const reqBtn = card.querySelector(".req-upload-btn");
+            var reqBtn = card.querySelector(".req-upload-btn");
             if (reqBtn) {
               const rIn = card.querySelector(".req-upload");
               reqBtn.addEventListener("click", function (e) {
@@ -1632,7 +1821,7 @@
                 if (rIn) rIn.click();
               });
             }
-            const respBtn = card.querySelector(".resp-upload-btn");
+            var respBtn = card.querySelector(".resp-upload-btn");
             if (respBtn) {
               const rpIn = card.querySelector(".resp-upload");
               respBtn.addEventListener("click", function (e) {
@@ -1693,6 +1882,54 @@
 
                 // action buttons
                 const sendBtn = card.querySelector(".send-btn");
+
+                // allow drag & drop onto the inline upload containers
+                const reqWrap = card.querySelector(".inline-req-upload-btn");
+                if (reqWrap) {
+                  reqWrap.addEventListener("dragover", function (e) {
+                    e.preventDefault();
+                    reqWrap.classList.add("dragover");
+                  });
+                  reqWrap.addEventListener("dragleave", function (e) {
+                    reqWrap.classList.remove("dragover");
+                  });
+                  reqWrap.addEventListener("drop", function (e) {
+                    e.preventDefault();
+                    reqWrap.classList.remove("dragover");
+                    const f =
+                      e.dataTransfer &&
+                      e.dataTransfer.files &&
+                      e.dataTransfer.files[0];
+                    if (f) {
+                      fd.RequestUploadName = f.name;
+                      fd.requestUploadAt = new Date().toISOString();
+                      applyFilters();
+                    }
+                  });
+                }
+                const respWrap = card.querySelector(".inline-resp-upload-btn");
+                if (respWrap) {
+                  respWrap.addEventListener("dragover", function (e) {
+                    e.preventDefault();
+                    respWrap.classList.add("dragover");
+                  });
+                  respWrap.addEventListener("dragleave", function (e) {
+                    respWrap.classList.remove("dragover");
+                  });
+                  respWrap.addEventListener("drop", function (e) {
+                    e.preventDefault();
+                    respWrap.classList.remove("dragover");
+                    const f =
+                      e.dataTransfer &&
+                      e.dataTransfer.files &&
+                      e.dataTransfer.files[0];
+                    if (f) {
+                      fd.ResponseUploadName = f.name;
+                      fd.responseUploadAt = new Date().toISOString();
+                      applyFilters();
+                    }
+                  });
+                }
                 if (sendBtn) {
                   sendBtn.addEventListener("click", function (e) {
                     e.stopPropagation();
@@ -1727,6 +1964,239 @@
               });
             }
           }
+
+          // -----------------------
+          // Additional expanded controls wiring (recipients, request-type, notes, cancel, change-upload)
+          // These handlers update in-memory fields and call applyFilters() to reflect changes.
+          var recipAddEl = card.querySelector(".recipient-add");
+          if (recipAddEl) {
+            recipAddEl.addEventListener("keydown", function (e) {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                const v = recipAddEl.value && recipAddEl.value.trim();
+                if (!v) return;
+                const arr =
+                  (fd.recipientNames && fd.recipientNames.slice()) ||
+                  (fd.recipientName
+                    ? fd.recipientName
+                        .split(";")
+                        .map(function (s) {
+                          return s.trim();
+                        })
+                        .filter(Boolean)
+                    : []);
+                if (arr.indexOf(v) === -1) arr.push(v);
+                fd.recipientNames = arr;
+                fd.recipientName = arr.join("; ");
+                recipAddEl.value = "";
+                applyFilters();
+              }
+            });
+          }
+
+          var changeReqBtn = card.querySelector(".change-req");
+          if (changeReqBtn) {
+            changeReqBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              const rIn = card.querySelector(".req-upload");
+              if (rIn) rIn.click();
+            });
+          }
+          var changeRespBtn = card.querySelector(".change-resp");
+          if (changeRespBtn) {
+            changeRespBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              const rpIn = card.querySelector(".resp-upload");
+              if (rpIn) rpIn.click();
+            });
+          }
+
+          var reqTypeSel = card.querySelector(".request-type");
+          if (reqTypeSel) {
+            reqTypeSel.addEventListener("change", function () {
+              fd["Request Type"] = reqTypeSel.value;
+              applyFilters();
+            });
+          }
+
+          var notesEl = card.querySelector(".notes");
+          if (notesEl) {
+            notesEl.addEventListener("change", function () {
+              fd.notes = notesEl.value;
+              applyFilters();
+            });
+          }
+
+          var cancelBtn = card.querySelector(".cancel-btn");
+          if (cancelBtn) {
+            cancelBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              card.classList.remove("open");
+              try {
+                relocateStatus(card, false);
+              } catch (e) {}
+              const eb = card.querySelector(".row-expand");
+              if (eb) {
+                eb.setAttribute("aria-expanded", "false");
+                eb.textContent = "Show";
+              }
+            });
+          }
+
+          // -----------------------
+          // Additional expanded controls wiring (recipients, request-type, notes, cancel, change-upload)
+          var recipAddEl = card.querySelector(".recipient-add");
+          if (recipAddEl) {
+            recipAddEl.addEventListener("keydown", function (e) {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                const v = recipAddEl.value && recipAddEl.value.trim();
+                if (!v) return;
+                const arr =
+                  (fd.recipientNames && fd.recipientNames.slice()) ||
+                  (fd.recipientName
+                    ? fd.recipientName
+                        .split(";")
+                        .map(function (s) {
+                          return s.trim();
+                        })
+                        .filter(Boolean)
+                    : []);
+                if (arr.indexOf(v) === -1) arr.push(v);
+                fd.recipientNames = arr;
+                fd.recipientName = arr.join("; ");
+                recipAddEl.value = "";
+                applyFilters();
+              }
+            });
+          }
+
+          var changeReqBtn = card.querySelector(".change-req");
+          if (changeReqBtn) {
+            changeReqBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              const rIn = card.querySelector(".req-upload");
+              if (rIn) rIn.click();
+            });
+          }
+          var changeRespBtn = card.querySelector(".change-resp");
+          if (changeRespBtn) {
+            changeRespBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              const rpIn = card.querySelector(".resp-upload");
+              if (rpIn) rpIn.click();
+            });
+          }
+
+          var reqTypeSel = card.querySelector(".request-type");
+          if (reqTypeSel) {
+            reqTypeSel.addEventListener("change", function () {
+              fd["Request Type"] = reqTypeSel.value;
+              applyFilters();
+            });
+          }
+
+          var notesEl = card.querySelector(".notes");
+          if (notesEl) {
+            notesEl.addEventListener("change", function () {
+              fd.notes = notesEl.value;
+              applyFilters();
+            });
+          }
+
+          var cancelBtn = card.querySelector(".cancel-btn");
+          if (cancelBtn) {
+            cancelBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              card.classList.remove("open");
+              try {
+                relocateStatus(card, false);
+              } catch (e) {}
+              const eb = card.querySelector(".row-expand");
+              if (eb) {
+                eb.setAttribute("aria-expanded", "false");
+                eb.textContent = "Show";
+              }
+            });
+          }
+
+          // -----------------------
+          // Additional expanded controls wiring for this render path
+          var recipAddEl = card.querySelector(".recipient-add");
+          if (recipAddEl) {
+            recipAddEl.addEventListener("keydown", function (e) {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                const v = recipAddEl.value && recipAddEl.value.trim();
+                if (!v) return;
+                const arr =
+                  (fd.recipientNames && fd.recipientNames.slice()) ||
+                  (fd.recipientName
+                    ? fd.recipientName
+                        .split(";")
+                        .map(function (s) {
+                          return s.trim();
+                        })
+                        .filter(Boolean)
+                    : []);
+                if (arr.indexOf(v) === -1) arr.push(v);
+                fd.recipientNames = arr;
+                fd.recipientName = arr.join("; ");
+                recipAddEl.value = "";
+                applyFilters();
+              }
+            });
+          }
+
+          var changeReqBtn = card.querySelector(".change-req");
+          if (changeReqBtn) {
+            changeReqBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              var rIn = card.querySelector(".req-upload");
+              if (rIn) rIn.click();
+            });
+          }
+          var changeRespBtn = card.querySelector(".change-resp");
+          if (changeRespBtn) {
+            changeRespBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              var rpIn = card.querySelector(".resp-upload");
+              if (rpIn) rpIn.click();
+            });
+          }
+
+          var reqTypeSel = card.querySelector(".request-type");
+          if (reqTypeSel) {
+            reqTypeSel.addEventListener("change", function () {
+              fd["Request Type"] = reqTypeSel.value;
+              applyFilters();
+            });
+          }
+
+          var notesEl = card.querySelector(".notes");
+          if (notesEl) {
+            notesEl.addEventListener("change", function () {
+              fd.notes = notesEl.value;
+              applyFilters();
+            });
+          }
+
+          var cancelBtn = card.querySelector(".cancel-btn");
+          if (cancelBtn) {
+            cancelBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              card.classList.remove("open");
+              try {
+                relocateStatus(card, false);
+              } catch (e) {}
+              var eb = card.querySelector(".row-expand");
+              if (eb) {
+                eb.setAttribute("aria-expanded", "false");
+                eb.textContent = "Show";
+              }
+            });
+          }
+
           // update wheel to reflect the currently rendered list
           drawStatusWheel(list);
           // update tasks card based on the currently rendered list
@@ -1951,23 +2421,23 @@
               <div style="display:flex;align-items:center;gap:12px;width:100%;">
                 <div style="flex:1 1 0;min-width:0;display:flex;align-items:center;gap:8px;">
                   <div class="title"><h3>${escapeHtml(titleText)}</h3></div>
-                  <div class="inline-fields" style="display:flex;align-items:center;gap:10px;">
-                    <div style="display:flex;align-items:center;gap:8px">
+                    <div class="inline-fields" style="display:flex;align-items:center;gap:10px;">
+                    <div class="inline-status" style="display:flex;align-items:center;gap:8px">
                       <span class="badge ${badgeClass(
                         fd.c_status || ""
                       )}" style="font-size:11px;padding:4px 6px">${escapeHtml(
               statusText
             )}</span>
                     </div>
-                    <div class="inline-field" title="Recipient">${escapeHtml(
+                    <div class="inline-field inline-recipient" title="Recipient">${escapeHtml(
                       recipient || "—"
                     )}</div>
-                    <div class="inline-field" title="Requested">${
+                    <div class="inline-field inline-requested" title="Requested">${
                       dateSent && reqUpload
                         ? escapeHtml(dateSent)
-                        : '<span class="upload-msg">Upload request document</span>'
+                        : '<span class="upload-msg">Upload request</span>'
                     }</div>
-                    <div class="inline-upload" style="position:relative">
+                    <div class="inline-upload inline-req-upload-btn" style="position:relative">
                       <input class="req-upload" data-idx="${j}" type="file" style="position:absolute;left:0;top:0;opacity:0;width:1px;height:1px" />
                       <button type="button" class="req-upload-btn" title="Request upload" aria-label="Upload request document">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1977,12 +2447,12 @@
                         </svg>
                       </button>
                     </div>
-                    <div class="inline-field" title="Received">${
+                    <div class="inline-field inline-received" title="Received">${
                       dateReceived && respUpload
                         ? escapeHtml(dateReceived)
-                        : '<span class="upload-msg">Upload response document</span>'
+                        : '<span class="upload-msg">Upload response</span>'
                     }</div>
-                    <div class="inline-upload" style="position:relative">
+                    <div class="inline-upload inline-resp-upload-btn" style="position:relative">
                       <input class="resp-upload" data-idx="${j}" type="file" style="position:absolute;left:0;top:0;opacity:0;width:1px;height:1px" />
                       <button type="button" class="resp-upload-btn" title="Response upload" aria-label="Upload response document">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1992,9 +2462,7 @@
                         </svg>
                       </button>
                     </div>
-                    <div class="inline-field" title="Next" style="font-weight:600">${
-                      nextStep ? escapeHtml(nextStep.label) : "—"
-                    }</div>
+                    <div style="flex:1"></div>
                     <div class="inline-field" style="min-width:56px;text-align:right;font-weight:700">${p}%</div>
                   </div>
                 </div>
@@ -2003,90 +2471,139 @@
                 </div>
               </div>
               <div class="expanded">
-                <div class="expanded-form" style="margin-top:10px;display:flex;gap:12px;align-items:flex-start">
-                  <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;">
-                    ${isClearance ? `<div>${clearanceHtml}</div>` : ""}
-                    <label style="font-size:13px">Request type:
-                      <select class="request-type-select sel" style="margin-left:8px">
-                        ${Object.keys(types)
-                          .map(
-                            (t) =>
-                              `<option value="${escapeHtml(t)}" ${
-                                escapeHtml(fd["Request Type"] || "") ===
-                                escapeHtml(t)
-                                  ? "selected"
-                                  : ""
-                              }>${escapeHtml(t)}</option>`
+                  <div class="expanded-form" style="margin-top:10px;display:flex;gap:12px;align-items:flex-start">
+                    <!-- Left column: Request Details -->
+                    <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;">
+                      <div style="font-weight:700;margin-bottom:6px">Request details</div>
+                      ${isClearance ? `<div>${clearanceHtml}</div>` : ""}
+                      <label style="font-size:13px">Request Type:
+                        <select class="request-type sel">
+                          ${Object.keys(types)
+                            .map(
+                              (t) =>
+                                `<option value="${escapeHtml(t)}" ${
+                                  escapeHtml(fd["Request Type"] || "") ===
+                                  escapeHtml(t)
+                                    ? "selected"
+                                    : ""
+                                }>${escapeHtml(t)}</option>`
+                            )
+                            .join("")}
+                        </select>
+                      </label>
+
+                      <label style="font-size:13px">Recipients:</label>
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        <div class="recipient-chips" style="display:flex;gap:6px;flex-wrap:wrap">
+                          ${(fd.recipientNames && fd.recipientNames.join
+                            ? fd.recipientNames
+                            : fd.recipientName
+                            ? fd.recipientName
+                                .split(";")
+                                .map((s) => s.trim())
+                                .filter(Boolean)
+                            : []
                           )
-                          .join("")}
-                        ${
-                          fd["Request Type"] && !types[fd["Request Type"]]
-                            ? `<option value="${escapeHtml(
-                                fd["Request Type"]
-                              )}" selected>${escapeHtml(
-                                fd["Request Type"]
-                              )}</option>`
-                            : ""
-                        }
-                      </select>
-                    </label>
+                            .map(
+                              (r) =>
+                                `<span class="badge b-gray" style="display:inline-flex;align-items:center;gap:6px">${escapeHtml(
+                                  r
+                                )}</span>`
+                            )
+                            .join("")}
+                        </div>
+                        <div style="flex:1;min-width:160px">
+                          <input list="datalist-recip-${j}" class="recipient-add" placeholder="Add recipient and press Enter" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px" />
+                          <datalist id="datalist-recip-${j}">
+                            ${Object.keys(recips)
+                              .map((r) => `<option value="${escapeHtml(r)}">`)
+                              .join("")}
+                          </datalist>
+                        </div>
+                      </div>
 
-                    <div>
-                      <label style="font-size:13px;display:block">Recipients:</label>
-                      <div class="recipients">
-                        <!-- tokens will be injected here -->
-                        <input class="recipient-input" type="text" placeholder="Add recipient and press Enter" value="" style="min-width:120px;padding:6px;border:1px solid var(--border);border-radius:8px" />
+                      <label style="font-size:13px">Request date: <input class="date-sent" type="date" value="${escapeHtml(
+                        (fd.requestedOn || "").split("T")[0] || ""
+                      )}"></label>
+
+                      <div style="margin-top:6px">Request uploads:
+                        <div class="upload-list muted" style="margin-top:6px">${
+                          reqUpload
+                            ? escapeHtml(reqUpload)
+                            : '<span class="upload-msg">No request file</span>'
+                        }</div>
+                        <div style="margin-top:6px"><button type="button" class="change-req" style="padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:#fff">Change / Upload</button></div>
                       </div>
                     </div>
 
-                    <label style="font-size:13px">Request date: <input class="date-sent" type="date" value="${escapeHtml(
-                      (fd.requestedOn || "").split("T")[0] || ""
-                    )}"></label>
+                    <!-- Right column: Response Details + Actions -->
+                    <div style="flex:0 0 360px;display:flex;flex-direction:column;gap:8px;">
+                      <div style="font-weight:700;margin-bottom:6px">Response details</div>
+                      <label style="font-size:13px">Response date: <input class="date-received" type="date" value="${escapeHtml(
+                        (fd.dateReceived || "").split("T")[0] || ""
+                      )}"></label>
 
-                    <div style="display:flex;gap:8px;align-items:center">
-                      <div style="flex:1">
-                        <label style="font-size:13px">Request files:</label>
-                        <div class="muted">${reqUploadHtml}</div>
+                      <div>Response uploads:
+                        <div class="resp-upload-list muted" style="margin-top:6px">${
+                          respUpload
+                            ? escapeHtml(respUpload)
+                            : '<span class="upload-msg">No response file</span>'
+                        }</div>
+                        <div style="margin-top:6px"><button type="button" class="change-resp" style="padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:#fff">Change / Upload</button></div>
                       </div>
-                      <div style="flex:0 0 auto"><button type="button" class="change-req">Change</button></div>
-                    </div>
-                  </div>
-                  <div style="flex:0 0 320px;display:flex;flex-direction:column;gap:8px;">
-                    <label style="font-size:13px">Response date: <input class="date-received" type="date" value="${escapeHtml(
-                      (fd.dateReceived || "").split("T")[0] || ""
-                    )}"></label>
-                    <div style="display:flex;gap:8px;align-items:center">
-                      <div style="flex:1">
-                        <label style="font-size:13px">Response files:</label>
-                        <div class="muted">${respUploadHtml}</div>
+
+                      <label style="font-size:13px">Received by: <input class="delivered-by" type="text" value="${escapeHtml(
+                        fd.deliveredBy || ""
+                      )}"></label>
+
+                      <label style="font-size:13px">Approval Status:
+                        <select class="status-select sel">
+                          ${statusOptions
+                            .map(
+                              (s) =>
+                                `<option value="${escapeHtml(s)}" ${
+                                  escapeHtml(fd.c_status || "") ===
+                                  escapeHtml(s)
+                                    ? "selected"
+                                    : ""
+                                }>${escapeHtml(s)}</option>`
+                            )
+                            .join("")}
+                        </select>
+                      </label>
+
+                      <label style="font-size:13px">Notes:
+                        <textarea class="notes" rows="4" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">${escapeHtml(
+                          fd.notes || fd.Notes || ""
+                        )}</textarea>
+                      </label>
+
+                      <div class="email-panel" style="margin-top:6px;">
+                        <div style="font-weight:700;margin-bottom:6px">Email Request</div>
+                        <label>To: <input class="email-to" type="email" value="${escapeHtml(
+                          fd.emailTo || fd.recipientEmail || ""
+                        )}" placeholder="recipient@example.com"></label>
+                        <label>CC: <input class="email-cc" type="text" placeholder="cc@example.com, cc2@example.com"></label>
+                        <label>Subject: <input class="email-subject" type="text" value="${escapeHtml(
+                          "Request: " + (fd["Request Type"] || titleText)
+                        )}"></label>
+                        <label>Message: <textarea class="email-body">${escapeHtml(
+                          fd.emailBody || "Please find the request attached."
+                        )}</textarea></label>
+                        <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+                          <button type="button" class="send-email-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--blue);color:#fff">Send Email</button>
+                          <button type="button" class="cancel-email-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff">Cancel</button>
+                          <div class="email-sent-msg" style="margin-left:8px;color:var(--green);font-weight:600"></div>
+                        </div>
                       </div>
-                      <div style="flex:0 0 auto"><button type="button" class="change-resp">Change</button></div>
-                    </div>
-                    <label style="font-size:13px">Received by: <input class="delivered-by" type="text" value="${escapeHtml(
-                      fd.deliveredBy || ""
-                    )}"></label>
-                    <label style="font-size:13px">Approval status: <select class="status-select sel">${statusOptions
-                      .map(
-                        (s) =>
-                          `<option value="${escapeHtml(s)}" ${
-                            escapeHtml(fd.c_status || "") === escapeHtml(s)
-                              ? "selected"
-                              : ""
-                          }>${escapeHtml(s)}</option>`
-                      )
-                      .join("")}</select></label>
-                    <label style="font-size:13px">Notes:
-                      <textarea class="notes" rows="5" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">${escapeHtml(
-                        fd.Notes || fd.notes || ""
-                      )}</textarea>
-                    </label>
-                    <div style="display:flex;gap:8px;margin-top:6px">
-                      <button class="send-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--blue);color:#fff">Send Request</button>
-                      <button class="cancel-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff">Cancel</button>
+
+                      <div style="display:flex;gap:8px;margin-top:6px">
+                        <button class="send-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--blue);color:#fff">Send Request</button>
+                        <button class="cancel-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff">Cancel</button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
             `;
 
             // clicking the card should toggle the expanded view (do not open FileMaker)
@@ -2104,6 +2621,10 @@
               // toggle the expanded state for this card instead of navigating to FileMaker
               const expBtn = card.querySelector(".row-expand");
               const open = card.classList.toggle("open");
+              // relocate status badge into expanded area when opening, and back when closing
+              try {
+                relocateStatus(card, open);
+              } catch (e) {}
               if (expBtn) {
                 expBtn.setAttribute("aria-expanded", String(open));
                 expBtn.textContent = open ? "Hide" : "Show";
@@ -2186,6 +2707,13 @@
         // -----------------------
         // Filtering: build a filtered list from inputs and selected wheel status
         function applyFilters() {
+          // remember which record (if any) is currently expanded so we can
+          // restore its open state after re-rendering the filtered list
+          const curOpen = document.querySelector(".req.open");
+          const openId = curOpen
+            ? curOpen.getAttribute("data-record-id")
+            : null;
+
           const term = lc(q.value),
             t = fType.value,
             rcv = fRecip.value,
@@ -2213,20 +2741,27 @@
             ).toLowerCase();
             if (hay.indexOf(term) >= 0) out.push(x);
           }
-          try {
-            render(out);
-          } catch (err) {
-            console.error("render failed", err);
-            // show a helpful status in the UI and attempt to fallback
-            try {
-              statusEl.textContent =
-                "Render error: " +
-                (err && err.message ? err.message : String(err));
-              statusEl.className = "statusline err";
-              grid.innerHTML = "";
-              updateTasks([]);
-              kpiTotal.textContent = items.length || 0;
-            } catch (_) {}
+          render(out);
+
+          // restore open state if the previously open record still exists
+          if (openId) {
+            const newCard = grid.querySelector(
+              `.req[data-record-id="${openId}"]`
+            );
+            if (newCard) {
+              newCard.classList.add("open");
+              try {
+                relocateStatus(newCard, true);
+              } catch (e) {}
+              // focus first control within the expanded area for accessibility
+              const ctl = newCard.querySelector(
+                ".expanded input, .expanded select, .expanded textarea, .expanded button"
+              );
+              if (ctl)
+                try {
+                  ctl.focus();
+                } catch (e) {}
+            }
           }
         }
 
