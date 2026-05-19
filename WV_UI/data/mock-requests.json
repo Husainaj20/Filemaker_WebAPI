@@ -1,0 +1,1649 @@
+[
+  {
+    "id": "req_1779221902043_5aa4sm",
+    "requestNumber": "ELR-20260519-TX41SG",
+    "recordId": "",
+    "recordLabel": "",
+    "title": "UI Enable Check 1779221901867",
+    "requester": "UI Tester",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "completed",
+    "status": "Completed",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-19",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {
+      "requester": "UI Tester",
+      "district": "",
+      "county": "",
+      "location": "",
+      "parcel": "",
+      "ea": "",
+      "route": "",
+      "pm": ""
+    },
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": "2026-05-19"
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "2026-05-19",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779221902200_3k797q",
+        "kind": "transition",
+        "message": "Stage changed to Completed.",
+        "actor": "web_operator",
+        "meta": {
+          "targetStage": "completed",
+          "reason": "complete_request"
+        },
+        "createdAt": "2026-05-19T20:18:22.200Z"
+      },
+      {
+        "id": "evt_1779221902150_xokjiy",
+        "kind": "transition",
+        "message": "Stage changed to Waiting Response.",
+        "actor": "web_operator",
+        "meta": {
+          "targetStage": "waiting_response",
+          "reason": "start_request"
+        },
+        "createdAt": "2026-05-19T20:18:22.150Z"
+      },
+      {
+        "id": "evt_1779221902104_dj8nnr",
+        "kind": "transition",
+        "message": "Stage changed to Request Sent.",
+        "actor": "web_operator",
+        "meta": {
+          "targetStage": "request_sent",
+          "reason": "send_request"
+        },
+        "createdAt": "2026-05-19T20:18:22.104Z"
+      },
+      {
+        "id": "evt_1779221902050_uwmqai",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "web_operator",
+        "meta": null,
+        "createdAt": "2026-05-19T20:18:22.050Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-19T20:18:22.043Z",
+    "updatedAt": "2026-05-19T20:18:22.200Z"
+  },
+  {
+    "id": "req_1779221889051_pr2lc4",
+    "requestNumber": "ELR-20260519-US84VT",
+    "recordId": "",
+    "recordLabel": "",
+    "title": "UI Lifecycle 1779221888899",
+    "requester": "UI Tester",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "completed",
+    "status": "Completed",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-19",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {
+      "requester": "UI Tester",
+      "district": "",
+      "county": "",
+      "location": "",
+      "parcel": "",
+      "ea": "",
+      "route": "",
+      "pm": ""
+    },
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": "2026-05-19"
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "2026-05-19",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779221889188_v1v183",
+        "kind": "transition",
+        "message": "Stage changed to Completed.",
+        "actor": "web_operator",
+        "meta": {
+          "targetStage": "completed",
+          "reason": "complete_request"
+        },
+        "createdAt": "2026-05-19T20:18:09.188Z"
+      },
+      {
+        "id": "evt_1779221889141_fndgwq",
+        "kind": "transition",
+        "message": "Stage changed to Waiting Response.",
+        "actor": "web_operator",
+        "meta": {
+          "targetStage": "waiting_response",
+          "reason": "start_request"
+        },
+        "createdAt": "2026-05-19T20:18:09.141Z"
+      },
+      {
+        "id": "evt_1779221889101_f6k4k4",
+        "kind": "transition",
+        "message": "Stage changed to Request Sent.",
+        "actor": "web_operator",
+        "meta": {
+          "targetStage": "request_sent",
+          "reason": "send_request"
+        },
+        "createdAt": "2026-05-19T20:18:09.101Z"
+      },
+      {
+        "id": "evt_1779221889054_yqv9v0",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "web_operator",
+        "meta": null,
+        "createdAt": "2026-05-19T20:18:09.054Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-19T20:18:09.051Z",
+    "updatedAt": "2026-05-19T20:18:09.188Z"
+  },
+  {
+    "id": "req_1779220255946_pru1ux",
+    "requestNumber": "ELR-20260519-BGK3K",
+    "recordId": "REC-9001",
+    "recordLabel": "DD 9001",
+    "title": "Lifecycle E2E",
+    "requester": "QA User",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "completed",
+    "status": "Completed",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-19",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": "2026-05-19"
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "2026-05-19",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779220256077_8k6asc",
+        "kind": "transition",
+        "message": "Stage changed to Completed.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "completed",
+          "reason": "complete_request"
+        },
+        "createdAt": "2026-05-19T19:50:56.077Z"
+      },
+      {
+        "id": "evt_1779220256054_88t1cn",
+        "kind": "transition",
+        "message": "Stage changed to Waiting Response.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "waiting_response",
+          "reason": "start_request"
+        },
+        "createdAt": "2026-05-19T19:50:56.054Z"
+      },
+      {
+        "id": "evt_1779220256035_095grn",
+        "kind": "transition",
+        "message": "Stage changed to Request Sent.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "request_sent",
+          "reason": "send_request"
+        },
+        "createdAt": "2026-05-19T19:50:56.035Z"
+      },
+      {
+        "id": "evt_1779220255946_a2c9db",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-19T19:50:55.946Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-19T19:50:55.946Z",
+    "updatedAt": "2026-05-19T19:50:56.077Z"
+  },
+  {
+    "id": "req_1779220216169_21gif2",
+    "requestNumber": "ELR-20260519-LKGHZ",
+    "recordId": "",
+    "recordLabel": "",
+    "title": "Lifecycle Test",
+    "requester": "Tester",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "completed",
+    "status": "Completed",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-19",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": "2026-05-19"
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "2026-05-19",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779220216251_sfipon",
+        "kind": "transition",
+        "message": "Stage changed to Completed.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "completed",
+          "reason": "complete_request"
+        },
+        "createdAt": "2026-05-19T19:50:16.251Z"
+      },
+      {
+        "id": "evt_1779220216234_ekq5t4",
+        "kind": "transition",
+        "message": "Stage changed to Waiting Response.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "waiting_response",
+          "reason": "start_request"
+        },
+        "createdAt": "2026-05-19T19:50:16.234Z"
+      },
+      {
+        "id": "evt_1779220216218_hgrky7",
+        "kind": "transition",
+        "message": "Stage changed to Request Sent.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "request_sent",
+          "reason": "send_request"
+        },
+        "createdAt": "2026-05-19T19:50:16.218Z"
+      },
+      {
+        "id": "evt_1779220216169_fgq3kq",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-19T19:50:16.169Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-19T19:50:16.169Z",
+    "updatedAt": "2026-05-19T19:50:16.251Z"
+  },
+  {
+    "id": "req_1779220078746_mrsbf8",
+    "requestNumber": "ELR-20260519-TNGGL",
+    "recordId": "REC-9001",
+    "recordLabel": "DD 9001",
+    "title": "Lifecycle E2E",
+    "requester": "QA User",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "request_sent",
+    "status": "Request Sent",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-19",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": "2026-05-19"
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "2026-05-19",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779220139909_mwk4t7",
+        "kind": "transition",
+        "message": "Stage changed to Request Sent.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "request_sent",
+          "reason": "send_request"
+        },
+        "createdAt": "2026-05-19T19:48:59.909Z"
+      },
+      {
+        "id": "evt_1779220135582_pba1xk",
+        "kind": "transition",
+        "message": "Stage changed to Completed.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "completed",
+          "reason": "complete_request"
+        },
+        "createdAt": "2026-05-19T19:48:55.582Z"
+      },
+      {
+        "id": "evt_1779220135563_lf6wu0",
+        "kind": "transition",
+        "message": "Stage changed to Waiting Response.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "waiting_response",
+          "reason": "start_request"
+        },
+        "createdAt": "2026-05-19T19:48:55.563Z"
+      },
+      {
+        "id": "evt_1779220135534_yat30p",
+        "kind": "transition",
+        "message": "Stage changed to Request Sent.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "request_sent",
+          "reason": "send_request"
+        },
+        "createdAt": "2026-05-19T19:48:55.534Z"
+      },
+      {
+        "id": "evt_1779220086703_z4fsj9",
+        "kind": "transition",
+        "message": "Stage changed to Completed.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "completed",
+          "reason": "complete_request"
+        },
+        "createdAt": "2026-05-19T19:48:06.703Z"
+      },
+      {
+        "id": "evt_1779220086684_q1pl5g",
+        "kind": "transition",
+        "message": "Stage changed to Waiting Response.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "waiting_response",
+          "reason": "start_request"
+        },
+        "createdAt": "2026-05-19T19:48:06.684Z"
+      },
+      {
+        "id": "evt_1779220086665_2d4zuc",
+        "kind": "transition",
+        "message": "Stage changed to Request Sent.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "request_sent",
+          "reason": "send_request"
+        },
+        "createdAt": "2026-05-19T19:48:06.665Z"
+      },
+      {
+        "id": "evt_1779220078746_jf76fm",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-19T19:47:58.746Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-19T19:47:58.746Z",
+    "updatedAt": "2026-05-19T19:48:59.909Z"
+  },
+  {
+    "id": "req_1779220070141_hqyuv9",
+    "requestNumber": "ELR-20260519-AS6K7",
+    "recordId": "REC-9001",
+    "recordLabel": "DD 9001",
+    "title": "Lifecycle E2E",
+    "requester": "QA User",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "draft",
+    "status": "Draft",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-19",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": ""
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779220070141_rbyuok",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-19T19:47:50.141Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-19T19:47:50.141Z",
+    "updatedAt": "2026-05-19T19:47:50.141Z"
+  },
+  {
+    "id": "req_1779073448535_u7uasf",
+    "requestNumber": "ELR-20260519-U7UASF",
+    "recordId": "",
+    "recordLabel": "",
+    "title": "Untitled Request",
+    "requester": "",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "draft",
+    "status": "Draft",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-18",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": ""
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779073448535_ovo4ij",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-18T03:04:08.535Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-18T03:04:08.535Z",
+    "updatedAt": "2026-05-18T03:04:08.535Z"
+  },
+  {
+    "id": "req_1779073448396_13hghv",
+    "requestNumber": "ELR-20260519-13HGHV",
+    "recordId": "",
+    "recordLabel": "",
+    "title": "Untitled Request",
+    "requester": "",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "response_files_uploaded",
+    "status": "Response Files Uploaded",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-18",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": ""
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "2023-10-27T10:00:00Z",
+      "completedOn": "",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": {
+        "id": "att_1779073448462_omqpa6",
+        "name": "attachment",
+        "mimeType": "application/octet-stream",
+        "size": 0,
+        "uploadedAt": "2026-05-18T03:04:08.462Z",
+        "base64": "",
+        "fieldKey": ""
+      },
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779073448484_k5v3mm",
+        "kind": "transition",
+        "message": "Stage changed to Response Files Uploaded.",
+        "actor": "api_user",
+        "meta": {
+          "targetStage": "response_files_uploaded",
+          "reason": ""
+        },
+        "createdAt": "2026-05-18T03:04:08.484Z"
+      },
+      {
+        "id": "evt_1779073448462_gu6vsp",
+        "kind": "saved",
+        "message": "Request saved via API.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-18T03:04:08.462Z"
+      },
+      {
+        "id": "evt_1779073448396_4pgzl4",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-18T03:04:08.396Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-18T03:04:08.396Z",
+    "updatedAt": "2026-05-18T03:04:08.484Z"
+  },
+  {
+    "id": "req_1779073436027_td0i7h",
+    "requestNumber": "ELR-20260519-TD0I7H",
+    "recordId": "",
+    "recordLabel": "",
+    "title": "Untitled Request",
+    "requester": "",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "draft",
+    "status": "Draft",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-18",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": ""
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779073436027_c7gsl8",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-18T03:03:56.027Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-18T03:03:56.027Z",
+    "updatedAt": "2026-05-18T03:03:56.027Z"
+  },
+  {
+    "id": "req_1779073435966_xpwruz",
+    "requestNumber": "ELR-20260519-XPWRUZ",
+    "recordId": "",
+    "recordLabel": "",
+    "title": "Untitled Request",
+    "requester": "",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "response_received",
+    "status": "Response Received",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-18",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": ""
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779073435966_wt55do",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-18T03:03:55.966Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-18T03:03:55.966Z",
+    "updatedAt": "2026-05-18T03:03:55.966Z"
+  },
+  {
+    "id": "req_1779073425582_fziq51",
+    "requestNumber": "ELR-20260519-FZIQ51",
+    "recordId": "",
+    "recordLabel": "",
+    "title": "Untitled Request",
+    "requester": "",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "draft",
+    "status": "Draft",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-18",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": ""
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779073425582_cecqxn",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-18T03:03:45.582Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-18T03:03:45.582Z",
+    "updatedAt": "2026-05-18T03:03:45.582Z"
+  },
+  {
+    "id": "req_1779073425491_58yexo",
+    "requestNumber": "ELR-20260519-58YEXO",
+    "recordId": "",
+    "recordLabel": "",
+    "title": "Untitled Request",
+    "requester": "",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "response_received",
+    "status": "Response Received",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-18",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": ""
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779073425491_cdk758",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-18T03:03:45.491Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-18T03:03:45.491Z",
+    "updatedAt": "2026-05-18T03:03:45.491Z"
+  },
+  {
+    "id": "req_1779073354511_slqdim",
+    "requestNumber": "ELR-20260519-SLQDIM",
+    "recordId": "",
+    "recordLabel": "",
+    "title": "Untitled Request",
+    "requester": "",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "draft",
+    "status": "Draft",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-18",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": ""
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779073354511_55ozli",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-18T03:02:34.511Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-18T03:02:34.511Z",
+    "updatedAt": "2026-05-18T03:02:34.511Z"
+  },
+  {
+    "id": "req_1779073248568_mcqepq",
+    "requestNumber": "ELR-20260519-MCQEPQ",
+    "recordId": "",
+    "recordLabel": "",
+    "title": "Untitled Request",
+    "requester": "",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "draft",
+    "status": "Draft",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-18",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": ""
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": {
+        "id": "att1",
+        "name": "resp.pdf",
+        "mimeType": "application/pdf",
+        "size": 3,
+        "uploadedAt": "2026-05-17T00:00:00.000Z",
+        "base64": "YWJj",
+        "fieldKey": ""
+      },
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779073254679_bfwuru",
+        "kind": "saved",
+        "message": "Request saved via API.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-18T03:00:54.679Z"
+      },
+      {
+        "id": "evt_1779073248569_p5ro0l",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-18T03:00:48.570Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-18T03:00:48.569Z",
+    "updatedAt": "2026-05-18T03:00:54.679Z"
+  },
+  {
+    "id": "req_1779071149843_4v0o28",
+    "requestNumber": "ELR-20260519-4V0O28",
+    "recordId": "",
+    "recordLabel": "",
+    "title": "Updated Test Title",
+    "requester": "",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "Draft",
+    "status": "Draft",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "",
+    "subTypeCode": "",
+    "recipientId": "",
+    "reportingCodeId": "",
+    "requestDate": "2026-05-18",
+    "dueDate": "",
+    "description": "",
+    "requestDetails": {},
+    "requestEmail": {
+      "to": "",
+      "cc": "",
+      "subject": "",
+      "body": "",
+      "sentAt": ""
+    },
+    "response": {
+      "status": "",
+      "receivedAt": "",
+      "completedOn": "",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": null,
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt_1779071166653_mrl7q0",
+        "kind": "transition",
+        "message": "Stage changed to Draft.",
+        "actor": "api_user",
+        "meta": {
+          "reason": ""
+        },
+        "createdAt": "2026-05-18T02:26:06.653Z"
+      },
+      {
+        "id": "evt_1779071161058_t1alos",
+        "kind": "transition",
+        "message": "Stage changed to Draft.",
+        "actor": "api_user",
+        "meta": {
+          "reason": ""
+        },
+        "createdAt": "2026-05-18T02:26:01.058Z"
+      },
+      {
+        "id": "evt_1779071155305_gdr6b1",
+        "kind": "transition",
+        "message": "Stage changed to Draft.",
+        "actor": "api_user",
+        "meta": {
+          "reason": ""
+        },
+        "createdAt": "2026-05-18T02:25:55.305Z"
+      },
+      {
+        "id": "evt_1779071152514_kkaqcp",
+        "kind": "saved",
+        "message": "Request saved via API.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-18T02:25:52.514Z"
+      },
+      {
+        "id": "evt_1779071149843_o88hmz",
+        "kind": "created",
+        "message": "Request created in API workspace.",
+        "actor": "api_user",
+        "meta": null,
+        "createdAt": "2026-05-18T02:25:49.843Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-18T02:25:49.843Z",
+    "updatedAt": "2026-05-18T02:26:06.653Z"
+  },
+  {
+    "id": "REQ-4001",
+    "requestNumber": "ELR-20260519-Q-4001",
+    "recordId": "REC-77779",
+    "recordLabel": "DD 77779-01-01",
+    "title": "RWE site visit for DD 77779-01-01",
+    "requester": "",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "request_pdf_ready",
+    "status": "Request Pdf Ready",
+    "priority": "high",
+    "assignedTo": "",
+    "typeCode": "RWE",
+    "subTypeCode": "RWE_SITE_VISIT",
+    "recipientId": "recipient_environmental",
+    "reportingCodeId": "reporting_rw_01",
+    "requestDate": "2026-05-01",
+    "dueDate": "2026-05-20",
+    "description": "Prepare field visit request package and route to Environmental Unit.",
+    "requestDetails": {
+      "typeOfDeed": "Direct Sale",
+      "mapNo": "Map 46",
+      "disposalMethod": "public-auction",
+      "notes": "Parcel map and site photos still need to be attached."
+    },
+    "requestEmail": {
+      "to": "environmental.unit@example.gov",
+      "cc": "excessland.team@example.gov",
+      "subject": "RWE request for DD 77779-01-01",
+      "body": "Please review the attached request package and confirm whether a field visit is required.",
+      "sentAt": ""
+    },
+    "response": {
+      "status": "awaiting_request_packet",
+      "receivedAt": "",
+      "completedOn": "",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": {
+        "id": "att_1778514774571",
+        "name": "generated_2ed99fb7-ca71-4eb6-afcf-204dad913686.pdf",
+        "mimeType": "application/pdf",
+        "size": 5198,
+        "uploadedAt": "2026-05-11T15:52:54.571Z",
+        "base64": "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",
+        "fieldKey": ""
+      },
+      "responsePdf": null,
+      "relatedUploads": [
+        {
+          "id": "att-map-1",
+          "name": "rw-map.pdf",
+          "mimeType": "application/pdf",
+          "size": 0,
+          "uploadedAt": "2026-05-01T16:30:00.000Z",
+          "base64": "",
+          "fieldKey": ""
+        }
+      ],
+      "responseUploads": []
+    },
+    "notes": [
+      {
+        "id": "note-4001-1",
+        "category": "workflow",
+        "text": "Seeded from audit migration data.",
+        "author": "system",
+        "createdAt": "2026-05-01T18:30:00.000Z"
+      }
+    ],
+    "history": [
+      {
+        "id": "evt_1779069220959_nl4z1s",
+        "kind": "transition",
+        "message": "Stage changed to Request Pdf Ready.",
+        "actor": "web_operator",
+        "meta": {
+          "targetStage": "request_pdf_ready",
+          "reason": ""
+        },
+        "createdAt": "2026-05-18T01:53:40.959Z"
+      },
+      {
+        "id": "evt_1778514774571_dgnrt7",
+        "kind": "inspection_pdf_generated",
+        "message": "Inspection PDF generated and persisted via backend.",
+        "actor": "api_user",
+        "meta": {
+          "fileName": "generated_2ed99fb7-ca71-4eb6-afcf-204dad913686.pdf",
+          "size": 5198
+        },
+        "createdAt": "2026-05-11T15:52:54.571Z"
+      },
+      {
+        "id": "evt_1778514751374_8qdmjs",
+        "kind": "inspection_pdf_generated",
+        "message": "Inspection PDF generated and persisted via backend.",
+        "actor": "api_user",
+        "meta": {
+          "fileName": "generated_inspection-template.pdf",
+          "size": 5340
+        },
+        "createdAt": "2026-05-11T15:52:31.374Z"
+      },
+      {
+        "id": "evt_1778514747085_r2u12a",
+        "kind": "inspection_pdf_generated",
+        "message": "Inspection PDF generated and persisted via backend.",
+        "actor": "api_user",
+        "meta": {
+          "fileName": "generated_inspection-template.pdf",
+          "size": 5341
+        },
+        "createdAt": "2026-05-11T15:52:27.085Z"
+      },
+      {
+        "id": "evt_1778514743312_m2rlvl",
+        "kind": "inspection_pdf_generated",
+        "message": "Inspection PDF generated and persisted via backend.",
+        "actor": "api_user",
+        "meta": {
+          "fileName": "generated_inspection-template.pdf",
+          "size": 5340
+        },
+        "createdAt": "2026-05-11T15:52:23.312Z"
+      },
+      {
+        "id": "evt-4001-1",
+        "kind": "seed",
+        "message": "Request loaded into the new backend workspace.",
+        "actor": "system",
+        "meta": null,
+        "createdAt": "2026-05-01T18:30:00.000Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-05-01T18:30:00.000Z",
+    "updatedAt": "2026-05-18T01:53:40.959Z"
+  },
+  {
+    "id": "REQ-4002",
+    "requestNumber": "ELR-20260519-Q-4002",
+    "recordId": "REC-88888",
+    "recordLabel": "DD 88888-02-02",
+    "title": "Clearance disposal request for DD 88888-02-02",
+    "requester": "",
+    "district": "",
+    "county": "",
+    "location": "",
+    "parcel": "",
+    "ea": "",
+    "route": "",
+    "pm": "",
+    "stage": "waiting_response",
+    "status": "Waiting Response",
+    "priority": "medium",
+    "assignedTo": "",
+    "typeCode": "CLEARANCE",
+    "subTypeCode": "CLEARANCE_DISPOSAL",
+    "recipientId": "recipient_traffic",
+    "reportingCodeId": "reporting_clearance_03",
+    "requestDate": "2026-04-26",
+    "dueDate": "2026-05-15",
+    "description": "Route disposal clearance package to Traffic Engineering.",
+    "requestDetails": {
+      "clearanceScope": "full",
+      "mapList": "Map A, Map B",
+      "comments": "Waiting for district response."
+    },
+    "requestEmail": {
+      "to": "traffic.engineering@example.gov",
+      "cc": "",
+      "subject": "Clearance request for DD 88888-02-02",
+      "body": "Please review the attached disposal clearance request.",
+      "sentAt": "2026-04-29"
+    },
+    "response": {
+      "status": "pending",
+      "receivedAt": "",
+      "completedOn": "",
+      "responder": "",
+      "summary": "",
+      "notes": "",
+      "decision": "",
+      "value": ""
+    },
+    "documents": {
+      "requestPdf": {
+        "id": "att-req-4002",
+        "name": "clearance-request.pdf",
+        "mimeType": "application/pdf",
+        "size": 0,
+        "uploadedAt": "2026-04-28T19:10:00.000Z",
+        "base64": "",
+        "fieldKey": ""
+      },
+      "responsePdf": null,
+      "relatedUploads": [],
+      "responseUploads": []
+    },
+    "notes": [],
+    "history": [
+      {
+        "id": "evt-4002-1",
+        "kind": "transition",
+        "message": "Moved to waiting response.",
+        "actor": "system",
+        "meta": null,
+        "createdAt": "2026-04-29T15:00:00.000Z"
+      }
+    ],
+    "approval": {
+      "state": "pending",
+      "by": "",
+      "at": "",
+      "notes": ""
+    },
+    "source": {
+      "system": "mock",
+      "recordId": ""
+    },
+    "createdAt": "2026-04-26T18:00:00.000Z",
+    "updatedAt": "2026-04-29T15:00:00.000Z"
+  }
+]
