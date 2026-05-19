@@ -11,8 +11,10 @@ import { createLogger } from "./lib/logger.js";
 import { loadConfig } from "./config.js";
 import { FileMakerDataApiClient } from "./filemaker/filemaker-client.js";
 import { createRequestFieldMapper } from "./filemaker/request-field-mapper.js";
+import { FallbackRequestRepository } from "./repositories/fallback-request-repository.js";
 import { FileMakerRequestRepository } from "./repositories/filemaker-request-repository.js";
 import { MockRequestRepository } from "./repositories/mock-request-repository.js";
+import { RequestPersistenceAdapter } from "./services/request-persistence-adapter.js";
 import { RequestService } from "./services/request-service.js";
 
 function createTraceId() {
@@ -43,42 +45,63 @@ function sendItemsResponse(response, statusCode, items, traceId) {
   });
 }
 
-function createRepository(config) {
-  if (config.dataMode === "filemaker") {
-    const client = new FileMakerDataApiClient(config.filemaker);
-    const mapper = createRequestFieldMapper(config.filemaker.schema);
-    return new FileMakerRequestRepository({
-      client,
-      mapper,
-      layoutName: config.filemaker.schema.layouts.requests,
-      recordsLayoutName:
-        config.filemaker.schema.layouts.records ||
-        config.filemaker.schema.layouts.requests,
-      containerFields: config.filemaker.schema.containerFields,
-      recordFields: config.filemaker.schema.recordFields,
-    });
-  }
-
-  if (!config.allowMockFallback) {
-    throw new AppError("Mock mode is disabled unless APP_ALLOW_MOCK_FALLBACK=true.", {
-      statusCode: 500,
-      code: "mock_mode_disabled",
-      details: {
-        dataMode: config.dataMode,
-      },
-      expose: true,
-    });
-  }
-
+function createMockRepository(config) {
   return new MockRequestRepository({
     filePath: config.mockDataFile,
     containerFields: config.filemaker.schema.containerFields,
   });
 }
 
-async function routeRequest(service, request, response, url, traceId) {
+function createFileMakerRepository(config, logger) {
+  const client = new FileMakerDataApiClient(config.filemaker, {
+    logger,
+  });
+  const mapper = createRequestFieldMapper(config.filemaker.schema);
+  return new FileMakerRequestRepository({
+    client,
+    mapper,
+    layoutName: config.filemaker.schema.layouts.requests,
+    recordsLayoutName:
+      config.filemaker.schema.layouts.records ||
+      config.filemaker.schema.layouts.requests,
+    containerFields: config.filemaker.schema.containerFields,
+    recordFields: config.filemaker.schema.recordFields,
+  });
+}
+
+function createRepository(config, logger) {
+  if (config.dataMode === "mock") {
+    return createMockRepository(config);
+  }
+
+  if (config.dataMode === "filemaker") {
+    const primaryRepository = createFileMakerRepository(config, logger);
+    if (config.allowMockFallback) {
+      return new FallbackRequestRepository({
+        primary: primaryRepository,
+        fallback: createMockRepository(config),
+        logger,
+        enableFallback: true,
+        requestedMode: "filemaker",
+      });
+    }
+    return primaryRepository;
+  }
+
+  throw new AppError("Unsupported APP_DATA_MODE value.", {
+    statusCode: 500,
+    code: "invalid_data_mode",
+    details: {
+      dataMode: config.dataMode,
+      expected: ["mock", "filemaker"],
+    },
+    expose: true,
+  });
+}
+
+async function routeRequest(adapter, service, request, response, url, traceId) {
   if (url.pathname === "/api/health" && request.method === "GET") {
-    return sendItemResponse(response, 200, await service.health(), traceId);
+    return sendItemResponse(response, 200, await adapter.health(), traceId);
   }
 
   if (url.pathname === "/api/requests" && request.method === "GET") {
@@ -87,7 +110,7 @@ async function routeRequest(service, request, response, url, traceId) {
     return sendItemsResponse(
       response,
       200,
-      await service.listRequestsFiltered({
+      await adapter.listRequests({
         parentRecordId,
         activeOnly,
       }),
@@ -97,12 +120,12 @@ async function routeRequest(service, request, response, url, traceId) {
 
   if (url.pathname === "/api/parents" && request.method === "GET") {
     const activeOnly = readBooleanQueryParam(url.searchParams, "activeOnly");
-    return sendItemsResponse(response, 200, await service.listParents({ activeOnly }), traceId);
+    return sendItemsResponse(response, 200, await adapter.listParents({ activeOnly }), traceId);
   }
 
   if (url.pathname === "/api/records" && request.method === "GET") {
     const activeOnly = readBooleanQueryParam(url.searchParams, "activeOnly");
-    return sendItemResponse(response, 200, await service.listRecords({ activeOnly }), traceId);
+    return sendItemResponse(response, 200, await adapter.listRecords({ activeOnly }), traceId);
   }
 
   if (url.pathname === "/api/requests" && request.method === "POST") {
@@ -110,7 +133,7 @@ async function routeRequest(service, request, response, url, traceId) {
     return sendItemResponse(
       response,
       201,
-      await service.createRequest(
+      await adapter.createRequest(
         body,
         request.headers["x-user"] || "api_user",
       ),
@@ -120,7 +143,7 @@ async function routeRequest(service, request, response, url, traceId) {
 
   const requestMatch = url.pathname.match(/^\/api\/requests\/([^/]+)$/);
   if (requestMatch && request.method === "GET") {
-    return sendItemResponse(response, 200, await service.getRequest(requestMatch[1]), traceId);
+    return sendItemResponse(response, 200, await adapter.getRequestById(requestMatch[1]), traceId);
   }
 
   if (requestMatch && ["PUT", "PATCH"].includes(request.method)) {
@@ -128,7 +151,7 @@ async function routeRequest(service, request, response, url, traceId) {
     return sendItemResponse(
       response,
       200,
-      await service.updateRequest(
+      await adapter.updateRequest(
         requestMatch[1],
         body,
         request.headers["x-user"] || "api_user",
@@ -142,7 +165,7 @@ async function routeRequest(service, request, response, url, traceId) {
     return sendItemResponse(
       response,
       200,
-      await service.sendRequest(sendMatch[1], request.headers["x-user"] || "api_user"),
+      await adapter.sendRequest(sendMatch[1], request.headers["x-user"] || "api_user"),
       traceId,
     );
   }
@@ -152,7 +175,7 @@ async function routeRequest(service, request, response, url, traceId) {
     return sendItemResponse(
       response,
       200,
-      await service.startRequest(startMatch[1], request.headers["x-user"] || "api_user"),
+      await adapter.startRequest(startMatch[1], request.headers["x-user"] || "api_user"),
       traceId,
     );
   }
@@ -162,7 +185,7 @@ async function routeRequest(service, request, response, url, traceId) {
     return sendItemResponse(
       response,
       200,
-      await service.completeRequest(
+      await adapter.completeRequest(
         completeMatch[1],
         request.headers["x-user"] || "api_user",
       ),
@@ -178,7 +201,7 @@ async function routeRequest(service, request, response, url, traceId) {
     return sendItemResponse(
       response,
       200,
-      await service.transitionRequest(
+      await adapter.transitionRequest(
         transitionMatch[1],
         body.targetStage,
         request.headers["x-user"] || body.actor || "api_user",
@@ -192,7 +215,7 @@ async function routeRequest(service, request, response, url, traceId) {
     /^\/api\/requests\/([^/]+)\/documents\/([^/]+)$/,
   );
   if (documentMatch && request.method === "GET") {
-    const file = await service.downloadDocument(documentMatch[1], documentMatch[2]);
+    const file = await adapter.downloadDocument(documentMatch[1], documentMatch[2]);
     response.writeHead(200, {
       "content-type": file.contentType || "application/octet-stream",
       "content-disposition": `attachment; filename="${String(file.fileName || "download.bin").replace(/"/g, "")}"`,
@@ -203,11 +226,11 @@ async function routeRequest(service, request, response, url, traceId) {
   }
 
   if (url.pathname === "/api/diagnostics/v2-readiness" && request.method === "GET") {
-    return sendItemResponse(response, 200, await service.v2ReadinessProbe(), traceId);
+    return sendItemResponse(response, 200, await adapter.v2ReadinessProbe(), traceId);
   }
 
   if (url.pathname === "/api/diagnostics/container-mapping" && request.method === "GET") {
-    return sendItemResponse(response, 200, await service.containerMappingProbe(), traceId);
+    return sendItemResponse(response, 200, await adapter.containerMappingProbe(), traceId);
   }
 
   if (url.pathname === "/api/diagnostics/stability" && ["GET", "POST"].includes(request.method)) {
@@ -215,7 +238,7 @@ async function routeRequest(service, request, response, url, traceId) {
     const queryIterations = url.searchParams.get("iterations");
     const iterations =
       body.iterations ?? (queryIterations ? Number.parseInt(queryIterations, 10) : undefined);
-    return sendItemResponse(response, 200, await service.stabilityProbe(iterations), traceId);
+    return sendItemResponse(response, 200, await adapter.stabilityProbe(iterations), traceId);
   }
 
   if (request.method !== "GET") {
@@ -264,7 +287,7 @@ export function createApplication(overrides = {}) {
       level: config.logLevel,
       namespace: "excessland",
     });
-  const repository = overrides.repository || createRepository(config);
+  const repository = overrides.repository || createRepository(config, logger);
   const service =
     overrides.service ||
     new RequestService({
@@ -272,6 +295,7 @@ export function createApplication(overrides = {}) {
       logger,
       mode: config.dataMode,
     });
+  const adapter = overrides.adapter || new RequestPersistenceAdapter({ service });
   service.config = config;
 
   async function handler(request, response) {
@@ -284,7 +308,7 @@ export function createApplication(overrides = {}) {
     response.setHeader("x-trace-id", traceId);
 
     try {
-      await routeRequest(service, request, response, url, traceId);
+      await routeRequest(adapter, service, request, response, url, traceId);
       logger.info("request.completed", {
         traceId,
         method: request.method,
@@ -327,6 +351,7 @@ export function createApplication(overrides = {}) {
     logger,
     repository,
     service,
+    adapter,
     handler,
   };
 }

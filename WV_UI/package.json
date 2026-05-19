@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/server/server.js",
     "dev": "node src/server/server.js",
-    "test": "node --test tests/**/*.test.js"
+    "test": "node --test tests/**/*.test.js",
+    "smoke:filemaker": "node scripts/smoke-filemaker.js"
   }
 }

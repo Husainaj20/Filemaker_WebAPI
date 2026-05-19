@@ -91,6 +91,24 @@ export class MockRequestRepository {
     };
   }
 
+  async getStatus() {
+    return {
+      mode: "mock",
+      ready: true,
+      fallback: {
+        allowed: false,
+        active: false,
+      },
+      mock: {
+        dataFile: this.filePath,
+      },
+      filemaker: {
+        configured: false,
+        connectivity: "not_applicable",
+      },
+    };
+  }
+
   getContainerMapping() {
     return {
       ...this.containerFields,

@@ -1,0 +1,64 @@
+{
+  "layouts": {
+    "requests": "ExcessLandRequests",
+    "records": "",
+    "sessions": ""
+  },
+  "fields": {
+    "id": "PrimaryKey",
+    "recordId": "MainRecordId",
+    "recordLabel": "RecordLabel",
+    "title": "Title",
+    "stage": "WorkflowStage",
+    "status": "StatusLabel",
+    "priority": "Priority",
+    "typeCode": "RequestType",
+    "subTypeCode": "SubRequestType",
+    "recipientId": "RecipientId",
+    "recipientLabel": "RecipientLabel",
+    "reportingCodeId": "ReportingCodeId",
+    "requestDate": "RequestDate",
+    "dueDate": "DueDate",
+    "description": "Description",
+    "approvalState": "ApprovalState",
+    "requestEmailTo": "RequestEmailTo",
+    "requestEmailCc": "RequestEmailCc",
+    "requestEmailSubject": "RequestEmailSubject",
+    "requestEmailBody": "RequestEmailBody",
+    "requestEmailSentAt": "RequestEmailSentAt",
+    "responseStatus": "ResponseStatus",
+    "responseReceivedAt": "ResponseReceivedAt",
+    "responseCompletedOn": "ResponseCompletedOn",
+    "responseResponder": "ResponseResponder",
+    "responseSummary": "ResponseSummary",
+    "responseNotes": "ResponseNotes",
+    "responseDecision": "ResponseDecision",
+    "payloadJson": "PayloadJson",
+    "createdAt": "CreatedAt",
+    "updatedAt": "UpdatedAt"
+  },
+  "containerFields": {
+    "requestPdf": "RequestPdf",
+    "responsePdf": "ResponsePdf",
+    "supportingPdf": ""
+  },
+  "recordFields": {
+    "id": "MainRecordId",
+    "displayName": "RecordLabel",
+    "status": "",
+    "location": ""
+  },
+  "stageMap": {
+    "draft": "draft",
+    "request_sent": "request_sent",
+    "waiting_response": "waiting_response",
+    "completed": "completed"
+  },
+  "todo": {
+    "confirmRequestLayout": "Set layouts.requests to the production FileMaker layout name.",
+    "confirmRecordLayout": "Set layouts.records to the parent records listing layout if different.",
+    "confirmSessionLayout": "Set layouts.sessions only if script/session auditing requires it.",
+    "confirmSupportingContainerField": "Set containerFields.supportingPdf when supporting files are persisted in FileMaker.",
+    "confirmStageStorageField": "Ensure fields.stage stores canonical values: draft, request_sent, waiting_response, completed."
+  }
+}

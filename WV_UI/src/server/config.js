@@ -5,10 +5,26 @@ import { fileURLToPath } from "node:url";
 const serverDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(serverDir, "../..");
 
+function readBoolean(value, fallback = false) {
+  if (value === undefined || value === null || value === "") return fallback;
+  return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
+}
+
+function resolveFileMakerBaseUrl() {
+  if (process.env.FILEMAKER_BASE_URL) {
+    return String(process.env.FILEMAKER_BASE_URL).trim();
+  }
+  if (process.env.FILEMAKER_SERVER) {
+    return String(process.env.FILEMAKER_SERVER).trim();
+  }
+  return "";
+}
+
 const defaultSchema = {
   layouts: {
     requests: process.env.FILEMAKER_LAYOUT_REQUESTS || "ExcessLandRequests",
-    records: process.env.FILEMAKER_LAYOUT_RECORDS || ""
+    records: process.env.FILEMAKER_LAYOUT_RECORDS || "",
+    sessions: process.env.FILEMAKER_LAYOUT_SESSIONS || ""
   },
   fields: {
     id: "PrimaryKey",
@@ -86,7 +102,7 @@ function resolveDataMode() {
 }
 
 function resolveAllowMockFallback() {
-  return String(process.env.APP_ALLOW_MOCK_FALLBACK || "false").toLowerCase() === "true";
+  return readBoolean(process.env.APP_ALLOW_MOCK_FALLBACK, false);
 }
 
 export function loadConfig() {
@@ -101,11 +117,15 @@ export function loadConfig() {
     projectRoot,
     mockDataFile: path.resolve(projectRoot, "data/mock-requests.json"),
     filemaker: {
-      baseUrl: process.env.FILEMAKER_BASE_URL || "",
+      baseUrl: resolveFileMakerBaseUrl(),
+      server: process.env.FILEMAKER_SERVER || "",
       database: process.env.FILEMAKER_DATABASE || "",
       username: process.env.FILEMAKER_USERNAME || "",
       password: process.env.FILEMAKER_PASSWORD || "",
       apiVersion: process.env.FILEMAKER_API_VERSION || "vLatest",
+      verifySsl: readBoolean(process.env.FILEMAKER_VERIFY_SSL, true),
+      timeoutMs: Number.parseInt(process.env.FILEMAKER_TIMEOUT_MS || "15000", 10),
+      maxRetries: Number.parseInt(process.env.FILEMAKER_MAX_RETRIES || "1", 10),
       schema: filemakerSchema
     }
   };

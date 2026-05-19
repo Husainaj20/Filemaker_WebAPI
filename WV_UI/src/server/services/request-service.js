@@ -144,6 +144,14 @@ export class RequestService {
     this.repository = options.repository;
     this.logger = options.logger;
     this.mode = options.mode;
+    this.requestedMode = options.mode;
+  }
+
+  getActiveMode() {
+    if (typeof this.repository.getRuntimeMode === "function") {
+      return this.repository.getRuntimeMode();
+    }
+    return this.mode;
   }
 
   async health() {
@@ -153,16 +161,47 @@ export class RequestService {
         this.config?.filemaker?.username &&
         this.config?.filemaker?.password,
     );
+
+    const repositoryStatus =
+      typeof this.repository.getStatus === "function"
+        ? await this.repository.getStatus()
+        : null;
+
+    const activeMode = repositoryStatus?.mode || this.getActiveMode();
+    const fallback = repositoryStatus?.fallback || {
+      allowed: Boolean(this.config?.allowMockFallback),
+      active: false,
+      reason: null,
+    };
+
+    const filemaker = repositoryStatus?.filemaker || {
+      configured: hasFileMakerConfig,
+      connectivity:
+        this.requestedMode === "filemaker" ? "unknown" : "not_applicable",
+      missing: [],
+      errorCode: "",
+      errorMessage: "",
+    };
+
     const ready =
-      this.mode !== "filemaker"
+      repositoryStatus?.ready ??
+      (this.requestedMode !== "filemaker"
         ? true
-        : hasFileMakerConfig;
+        : hasFileMakerConfig && filemaker.connectivity !== "unavailable");
 
     return {
-      mode: this.mode,
+      mode: activeMode,
+      requestedMode: this.requestedMode,
+      activeMode,
       ready,
+      fallbackActive: Boolean(fallback.active),
+      fallback,
       diagnostics: {
         filemakerConfigured: hasFileMakerConfig,
+        filemakerConnectivity: filemaker.connectivity,
+        filemakerMissing: filemaker.missing || [],
+        filemakerErrorCode: filemaker.errorCode || "",
+        filemakerErrorMessage: filemaker.errorMessage || "",
       },
     };
   }
@@ -248,9 +287,10 @@ export class RequestService {
       records: Array.from(merged.values()).sort((a, b) =>
         String(a.displayName).localeCompare(String(b.displayName)),
       ),
-      mode: this.mode,
+      mode: this.getActiveMode(),
+      activeMode: this.getActiveMode(),
       source:
-        parentPayload.source || (this.mode === "filemaker" ? "filemaker-data-api" : "mock"),
+        parentPayload.source || (this.getActiveMode() === "filemaker" ? "filemaker-data-api" : "mock"),
       diagnostics: {
         ...(parentPayload.diagnostics || {}),
         recordCount: merged.size,
@@ -487,8 +527,8 @@ export class RequestService {
     const checks = [
       {
         key: "data_mode_filemaker",
-        ok: this.mode === "filemaker",
-        detail: this.mode,
+        ok: this.requestedMode === "filemaker",
+        detail: this.requestedMode,
       },
       {
         key: "mock_fallback_disabled",
@@ -508,7 +548,8 @@ export class RequestService {
     ];
 
     return {
-      mode: this.mode,
+      mode: this.getActiveMode(),
+      requestedMode: this.requestedMode,
       ready: checks.every((check) => check.ok),
       checks,
     };

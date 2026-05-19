@@ -1,5 +1,6 @@
 import {
   clone,
+  humanizeStage,
   normalizeRequest,
   stripAttachmentPayloads
 } from "../../shared/requests/request-model.js";
@@ -21,10 +22,33 @@ function readField(fieldData, fieldName) {
 export function createRequestFieldMapper(schema) {
   const fields = schema.fields || {};
   const containerFields = schema.containerFields || {};
+  const stageMap = schema.stageMap || {};
+  const reverseStageMap = Object.fromEntries(
+    Object.entries(stageMap).map(([canonicalStage, fileMakerStage]) => [
+      String(fileMakerStage || "").toLowerCase(),
+      canonicalStage,
+    ]),
+  );
+
+  function toFileMakerStage(stage) {
+    const normalized = String(stage || "").trim();
+    if (!normalized) return "";
+    return stageMap[normalized] || normalized;
+  }
+
+  function toCanonicalStage(stage) {
+    const normalized = String(stage || "").trim();
+    if (!normalized) return "";
+    return reverseStageMap[normalized.toLowerCase()] || normalized;
+  }
 
   function fromFileMakerRecord(record) {
     const fieldData = record?.fieldData || {};
     const payload = safeParseJson(readField(fieldData, fields.payloadJson)) || {};
+
+    const canonicalStage =
+      toCanonicalStage(readField(fieldData, fields.stage)) ||
+      toCanonicalStage(payload.stage);
 
     return normalizeRequest({
       ...payload,
@@ -32,8 +56,11 @@ export function createRequestFieldMapper(schema) {
       recordId: readField(fieldData, fields.recordId) || payload.recordId,
       recordLabel: readField(fieldData, fields.recordLabel) || payload.recordLabel,
       title: readField(fieldData, fields.title) || payload.title,
-      stage: readField(fieldData, fields.stage) || payload.stage,
-      status: readField(fieldData, fields.status) || payload.status,
+      stage: canonicalStage,
+      status:
+        readField(fieldData, fields.status) ||
+        payload.status ||
+        humanizeStage(canonicalStage),
       priority: readField(fieldData, fields.priority) || payload.priority,
       typeCode: readField(fieldData, fields.typeCode) || payload.typeCode,
       subTypeCode: readField(fieldData, fields.subTypeCode) || payload.subTypeCode,
@@ -100,7 +127,7 @@ export function createRequestFieldMapper(schema) {
         [fields.recordId]: payload.recordId,
         [fields.recordLabel]: payload.recordLabel,
         [fields.title]: payload.title,
-        [fields.stage]: payload.stage,
+        [fields.stage]: toFileMakerStage(payload.stage),
         [fields.status]: payload.status,
         [fields.priority]: payload.priority,
         [fields.typeCode]: payload.typeCode,

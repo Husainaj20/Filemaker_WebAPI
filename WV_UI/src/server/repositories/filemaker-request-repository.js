@@ -130,6 +130,29 @@ export class FileMakerRequestRepository {
     };
   }
 
+  async getStatus() {
+    const probe = await this.client.probeConnectivity(this.layoutName);
+    return {
+      mode: "filemaker",
+      ready: Boolean(probe.ok),
+      filemaker: {
+        configured: Boolean(probe.configured),
+        connectivity: probe.ok ? "connected" : "unavailable",
+        missing: probe.missing || [],
+        errorCode: probe.errorCode || "",
+        errorMessage: probe.errorMessage || "",
+        elapsedMs: probe.elapsedMs,
+      },
+      fallback: {
+        allowed: false,
+        active: false,
+      },
+      mock: {
+        available: false,
+      },
+    };
+  }
+
   getContainerMapping() {
     return {
       ...this.containerFields,
