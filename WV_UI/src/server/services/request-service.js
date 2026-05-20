@@ -32,6 +32,13 @@ function normalizeDocumentKind(kind) {
   return "";
 }
 
+function normalizeReportFilters(filters = {}) {
+  return {
+    parentRecordId: String(filters.parentRecordId || "").trim(),
+    activeOnly: Boolean(filters.activeOnly),
+  };
+}
+
 function mapAttachmentToDocumentEntry(kind, attachment, containerFields = {}) {
   if (!attachment) return null;
   return {
@@ -794,6 +801,121 @@ export class RequestService {
       fileName: attachment.name || `${normalizedKind}.bin`,
       contentType: attachment.mimeType || "application/octet-stream",
       body: Buffer.from(attachment.base64, "base64"),
+    };
+  }
+
+  async listRequestsForExport(filters = {}) {
+    const normalizedFilters = normalizeReportFilters(filters);
+    const requests = await this.listRequestsFiltered(normalizedFilters);
+    return requests
+      .map((request) => normalizeRequest(request))
+      .sort((a, b) =>
+        String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")),
+      );
+  }
+
+  async getReportSummary(filters = {}) {
+    const normalizedFilters = normalizeReportFilters(filters);
+    const requests = await this.listRequestsForExport(normalizedFilters);
+
+    const stageCounts = {};
+    const priorityCounts = {};
+    const assigneeCounts = {};
+
+    let activeRequests = 0;
+    let completedRequests = 0;
+    let overdueActiveRequests = 0;
+    const now = Date.now();
+
+    for (const request of requests) {
+      const stage = String(request.stage || "unknown").trim() || "unknown";
+      stageCounts[stage] = (stageCounts[stage] || 0) + 1;
+
+      const priority = String(request.priority || "unspecified").trim();
+      priorityCounts[priority || "unspecified"] =
+        (priorityCounts[priority || "unspecified"] || 0) + 1;
+
+      const assignee = String(request.assignedTo || "unassigned").trim();
+      assigneeCounts[assignee || "unassigned"] =
+        (assigneeCounts[assignee || "unassigned"] || 0) + 1;
+
+      if (isActiveRequest(request)) {
+        activeRequests += 1;
+
+        if (request.dueDate) {
+          const dueAt = Date.parse(`${request.dueDate}T23:59:59.999Z`);
+          if (Number.isFinite(dueAt) && dueAt < now) {
+            overdueActiveRequests += 1;
+          }
+        }
+      } else {
+        completedRequests += 1;
+      }
+    }
+
+    return {
+      generatedAt: nowIso(),
+      filters: normalizedFilters,
+      totals: {
+        requests: requests.length,
+        activeRequests,
+        completedRequests,
+        overdueActiveRequests,
+      },
+      stageCounts,
+      priorityCounts,
+      assigneeCounts,
+      mode: this.getActiveMode(),
+    };
+  }
+
+  async deploymentReadinessProbe() {
+    const health = await this.health();
+    const reportSummary = await this.getReportSummary();
+
+    const checks = [
+      {
+        key: "health_ready",
+        ok: Boolean(health.ready),
+        detail: health.ready ? "ready" : "not_ready",
+      },
+      {
+        key: "default_role_configured",
+        ok: Boolean(this.config?.defaultRole),
+        detail: String(this.config?.defaultRole || "missing"),
+      },
+      {
+        key: "reporting_accessible",
+        ok: Number.isFinite(reportSummary?.totals?.requests),
+        detail: `requests:${reportSummary?.totals?.requests || 0}`,
+      },
+      {
+        key: "filemaker_mapping_if_strict",
+        ok:
+          health.requestedMode !== "filemaker" ||
+          health.fallbackActive ||
+          Boolean(health.diagnostics?.filemaker?.mappingReady),
+        detail:
+          health.requestedMode !== "filemaker"
+            ? "not_filemaker"
+            : health.fallbackActive
+              ? "fallback_active"
+              : health.diagnostics?.filemaker?.mappingReady
+                ? "mapping_ready"
+                : "mapping_missing",
+      },
+    ];
+
+    return {
+      generatedAt: nowIso(),
+      ready: checks.every((check) => check.ok),
+      checks,
+      health: {
+        requestedMode: health.requestedMode,
+        activeMode: health.activeMode,
+        fallbackActive: health.fallbackActive,
+      },
+      summary: reportSummary.totals,
     };
   }
 

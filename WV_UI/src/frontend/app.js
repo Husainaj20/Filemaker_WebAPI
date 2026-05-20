@@ -18,6 +18,7 @@ import {
   REPORTING_CODE_OPTIONS,
   REQUEST_TYPES,
 } from "../shared/requests/request-types.js";
+import { getRolePermissions, ROLES } from "../shared/requests/role-policy.js";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -127,6 +128,8 @@ export class ExcessLandApp {
         containerField: "",
       },
       detailDocuments: [],
+      role: "operator",
+      reportSummary: null,
     };
 
     this.handleClick = this.handleClick.bind(this);
@@ -135,10 +138,108 @@ export class ExcessLandApp {
   }
 
   async init() {
+    apiClient.setRole(this.state.role);
     this.root.addEventListener("click", this.handleClick);
     this.root.addEventListener("input", this.handleInput);
     this.root.addEventListener("change", this.handleChange);
     await this.reload();
+  }
+
+  get rolePermissions() {
+    return new Set(getRolePermissions(this.state.role));
+  }
+
+  can(permission) {
+    return this.rolePermissions.has(permission);
+  }
+
+  deny(permission) {
+    this.state.flash = {
+      tone: "danger",
+      message: `Role ${this.state.role} is missing permission: ${permission}`,
+    };
+    this.render();
+  }
+
+  async loadReportSummary(options = {}) {
+    if (!this.can("reports:view")) {
+      this.state.reportSummary = null;
+      if (!options.silent) this.render();
+      return;
+    }
+
+    try {
+      this.state.reportSummary = await apiClient.getReportSummary({
+        parentRecordId: this.state.filters.parentRecordId,
+        activeOnly: this.state.filters.activeOnly,
+      });
+    } catch (error) {
+      if (!options.silent) {
+        this.state.flash = {
+          tone: "danger",
+          message: this.describeError(error),
+        };
+      }
+    } finally {
+      if (!options.silent) this.render();
+    }
+  }
+
+  async exportSummaryJson() {
+    if (!this.can("reports:export")) {
+      this.deny("reports:export");
+      return;
+    }
+
+    try {
+      const summary = await apiClient.getReportSummaryJson({
+        parentRecordId: this.state.filters.parentRecordId,
+        activeOnly: this.state.filters.activeOnly,
+      });
+      const blob = new Blob([JSON.stringify(summary, null, 2)], {
+        type: "application/json",
+      });
+      const fileName = `request-summary-${new Date().toISOString().slice(0, 10)}.json`;
+      this.downloadBlob(blob, fileName);
+    } catch (error) {
+      this.state.flash = {
+        tone: "danger",
+        message: this.describeError(error),
+      };
+      this.render();
+    }
+  }
+
+  async exportRequestsCsv() {
+    if (!this.can("reports:export")) {
+      this.deny("reports:export");
+      return;
+    }
+
+    try {
+      const file = await apiClient.downloadRequestsCsv({
+        parentRecordId: this.state.filters.parentRecordId,
+        activeOnly: this.state.filters.activeOnly,
+      });
+      this.downloadBlob(file.blob, file.fileName);
+    } catch (error) {
+      this.state.flash = {
+        tone: "danger",
+        message: this.describeError(error),
+      };
+      this.render();
+    }
+  }
+
+  downloadBlob(blob, fileName) {
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(blobUrl);
   }
 
   async reload(options = {}) {
@@ -196,6 +297,8 @@ export class ExcessLandApp {
 
       this.state.selectedRequestId =
         this.state.selectedRequestId || this.state.requests[0]?.id || "";
+
+      await this.loadReportSummary({ silent: true });
     } catch (error) {
       this.state.flash = {
         tone: "danger",
@@ -782,6 +885,10 @@ export class ExcessLandApp {
     }
 
     if (action === "new-request") {
+      if (!this.can("requests:write")) {
+        this.deny("requests:write");
+        return;
+      }
       this.openCreateRequestModal();
       return;
     }
@@ -792,11 +899,19 @@ export class ExcessLandApp {
     }
 
     if (action === "create-request-submit") {
+      if (!this.can("requests:write")) {
+        this.deny("requests:write");
+        return;
+      }
       void this.submitCreateRequest();
       return;
     }
 
     if (action === "save-request") {
+      if (!this.can("requests:write")) {
+        this.deny("requests:write");
+        return;
+      }
       void this.saveSelected();
       return;
     }
@@ -813,26 +928,46 @@ export class ExcessLandApp {
     }
 
     if (action === "transition-request") {
+      if (!this.can("requests:write")) {
+        this.deny("requests:write");
+        return;
+      }
       void this.runTransition(actionTarget.dataset.stage);
       return;
     }
 
     if (action === "add-note") {
+      if (!this.can("requests:write")) {
+        this.deny("requests:write");
+        return;
+      }
       void this.commitNote();
       return;
     }
 
     if (action === "add-document-placeholder") {
+      if (!this.can("requests:write")) {
+        this.deny("requests:write");
+        return;
+      }
       void this.addDocumentPlaceholder();
       return;
     }
 
     if (action === "save-response") {
+      if (!this.can("requests:write")) {
+        this.deny("requests:write");
+        return;
+      }
       void this.saveResponseMetadata();
       return;
     }
 
     if (action === "remove-attachment") {
+      if (!this.can("requests:write")) {
+        this.deny("requests:write");
+        return;
+      }
       this.removeAttachment(
         actionTarget.dataset.kind,
         actionTarget.dataset.attachmentId,
@@ -846,17 +981,39 @@ export class ExcessLandApp {
     }
 
     if (action === "send-request") {
+      if (!this.can("requests:write")) {
+        this.deny("requests:write");
+        return;
+      }
       void this.runLifecycleAction("send");
       return;
     }
 
     if (action === "start-request") {
+      if (!this.can("requests:write")) {
+        this.deny("requests:write");
+        return;
+      }
       void this.runLifecycleAction("start");
       return;
     }
 
     if (action === "complete-request") {
+      if (!this.can("requests:write")) {
+        this.deny("requests:write");
+        return;
+      }
       void this.runLifecycleAction("complete");
+      return;
+    }
+
+    if (action === "export-summary-json") {
+      void this.exportSummaryJson();
+      return;
+    }
+
+    if (action === "export-requests-csv") {
+      void this.exportRequestsCsv();
       return;
     }
   }
@@ -864,6 +1021,9 @@ export class ExcessLandApp {
   handleInput(event) {
     const fieldTarget = event.target.closest("[data-path]");
     if (fieldTarget) {
+      if (!this.can("requests:write")) {
+        return;
+      }
       const value =
         fieldTarget.type === "checkbox"
           ? fieldTarget.checked
@@ -908,24 +1068,44 @@ export class ExcessLandApp {
     }
 
     if (event.target.matches("[data-note-field]")) {
+      if (!this.can("requests:write")) {
+        return;
+      }
       this.state.noteDraft[event.target.dataset.noteField] = event.target.value;
       return;
     }
 
     if (event.target.matches("[data-document-field]")) {
+      if (!this.can("requests:write")) {
+        return;
+      }
       this.state.documentDraft[event.target.dataset.documentField] =
         event.target.value;
       return;
     }
 
     if (event.target.matches("[data-create-field]")) {
+      if (!this.can("requests:write")) {
+        return;
+      }
       this.state.createModal.draft[event.target.dataset.createField] =
         event.target.value;
     }
   }
 
   handleChange(event) {
+    if (event.target.matches("[data-role]")) {
+      this.state.role = String(event.target.value || "operator").toLowerCase();
+      apiClient.setRole(this.state.role);
+      void this.reload({ preserveFlash: true });
+      return;
+    }
+
     if (event.target.matches("[data-upload]")) {
+      if (!this.can("requests:write")) {
+        event.target.value = "";
+        return;
+      }
       void this.attachFiles(event.target.dataset.upload, event.target.files);
       event.target.value = "";
     }
@@ -1684,6 +1864,77 @@ export class ExcessLandApp {
     `;
   }
 
+  renderReportPanel() {
+    if (!this.can("reports:view")) {
+      return `
+        <section class="card report-card">
+          <div class="card-header">
+            <h3>Operational Reporting</h3>
+          </div>
+          <div class="empty-inline">Current role does not include reporting access.</div>
+        </section>
+      `;
+    }
+
+    const summary = this.state.reportSummary;
+    if (!summary) {
+      return `
+        <section class="card report-card">
+          <div class="card-header">
+            <h3>Operational Reporting</h3>
+          </div>
+          <div class="empty-inline">Loading summary report...</div>
+        </section>
+      `;
+    }
+
+    const totals = summary.totals || {};
+    const stageCounts = Object.entries(summary.stageCounts || {});
+
+    return `
+      <section class="card report-card">
+        <div class="card-header">
+          <h3>Operational Reporting</h3>
+          <div class="subtle">Generated: ${escapeHtml(summary.generatedAt || "")}</div>
+        </div>
+        <div class="summary-grid compact">
+          <article class="summary-card">
+            <span>Total</span>
+            <strong>${escapeHtml(totals.requests || 0)}</strong>
+          </article>
+          <article class="summary-card">
+            <span>Active</span>
+            <strong>${escapeHtml(totals.activeRequests || 0)}</strong>
+          </article>
+          <article class="summary-card">
+            <span>Completed</span>
+            <strong>${escapeHtml(totals.completedRequests || 0)}</strong>
+          </article>
+          <article class="summary-card">
+            <span>Overdue Active</span>
+            <strong>${escapeHtml(totals.overdueActiveRequests || 0)}</strong>
+          </article>
+        </div>
+        <div class="report-stage-list">
+          ${
+            stageCounts.length
+              ? stageCounts
+                  .map(
+                    ([stage, count]) => `
+                      <div class="report-stage-item">
+                        <span>${escapeHtml(this.getFriendlyStageLabel(stage))}</span>
+                        <strong>${escapeHtml(count)}</strong>
+                      </div>
+                    `,
+                  )
+                  .join("")
+              : '<div class="empty-inline">No stage counts available.</div>'
+          }
+        </div>
+      </section>
+    `;
+  }
+
   render() {
     const totalRequests = this.state.requests.length;
     const waitingCount = this.state.requests.filter(
@@ -1747,7 +1998,27 @@ export class ExcessLandApp {
             </div>
             <div class="topbar-actions">
               <div class="pill">${totalRequests} requests</div>
-              <button class="primary-button" data-action="new-request">New request</button>
+              <label class="role-select">
+                <span>Role</span>
+                <select data-role>
+                  ${optionMarkup(
+                    ROLES.map((role) => ({
+                      value: role,
+                      label: role.charAt(0).toUpperCase() + role.slice(1),
+                    })),
+                    this.state.role,
+                  )}
+                </select>
+              </label>
+              <button class="secondary-button" data-action="export-summary-json" ${
+                this.can("reports:export") ? "" : "disabled"
+              }>Export Summary JSON</button>
+              <button class="secondary-button" data-action="export-requests-csv" ${
+                this.can("reports:export") ? "" : "disabled"
+              }>Export Requests CSV</button>
+              <button class="primary-button" data-action="new-request" ${
+                this.can("requests:write") ? "" : "disabled"
+              }>New request</button>
             </div>
           </header>
           ${
@@ -1775,6 +2046,7 @@ export class ExcessLandApp {
               <strong>${doneCount}</strong>
             </article>
           </section>
+          ${this.renderReportPanel()}
           ${
             this.state.activeModule !== "requests"
               ? `
@@ -1844,5 +2116,23 @@ export class ExcessLandApp {
       </div>
       ${this.renderCreateModal()}
     `;
+
+    if (!this.can("requests:write")) {
+      this.root
+        .querySelectorAll(
+          "[data-path], [data-upload], [data-note-field], [data-document-field], [data-create-field]",
+        )
+        .forEach((element) => {
+          element.setAttribute("disabled", "disabled");
+        });
+
+      this.root
+        .querySelectorAll(
+          '[data-action="save-request"], [data-action="send-request"], [data-action="start-request"], [data-action="complete-request"], [data-action="transition-request"], [data-action="remove-attachment"], [data-action="add-note"], [data-action="add-document-placeholder"], [data-action="save-response"], [data-action="create-request-submit"]',
+        )
+        .forEach((element) => {
+          element.setAttribute("disabled", "disabled");
+        });
+    }
   }
 }

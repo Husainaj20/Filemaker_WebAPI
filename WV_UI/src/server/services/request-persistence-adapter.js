@@ -43,6 +43,14 @@ export class RequestPersistenceAdapter {
     return this.service.updateResponse(requestId, patch, actor);
   }
 
+  async getReportSummary(filters = {}) {
+    return this.service.getReportSummary(filters);
+  }
+
+  async listRequestsForExport(filters = {}) {
+    return this.service.listRequestsForExport(filters);
+  }
+
   async createRequest(input, actor) {
     return this.service.createRequest(input, actor);
   }
@@ -86,5 +94,9 @@ export class RequestPersistenceAdapter {
 
   async stabilityProbe(iterations) {
     return this.service.stabilityProbe(iterations);
+  }
+
+  async deploymentReadinessProbe() {
+    return this.service.deploymentReadinessProbe();
   }
 }

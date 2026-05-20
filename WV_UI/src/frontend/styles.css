@@ -160,6 +160,22 @@ button {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.role-select {
+  display: inline-grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.role-select select {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  min-width: 130px;
+  background: var(--surface);
 }
 
 .pill,
@@ -198,6 +214,14 @@ button {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 20px;
+}
+
+.summary-grid.compact {
+  margin-bottom: 12px;
+}
+
+.summary-grid.compact .summary-card strong {
+  font-size: 1.5rem;
 }
 
 .summary-card {
@@ -352,6 +376,24 @@ button {
 .card {
   padding: 18px;
   margin-bottom: 14px;
+}
+
+.report-card {
+  margin-bottom: 20px;
+}
+
+.report-stage-list {
+  display: grid;
+  gap: 8px;
+}
+
+.report-stage-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-strong);
 }
 
 .side-card {

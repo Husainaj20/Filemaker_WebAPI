@@ -125,6 +125,40 @@ Reference:
 
 - `docs/phase-3-request-detail-depth.md`
 
+## Phase 4 operational readiness
+
+Role-aware API behavior:
+
+- `x-role` selects role (`viewer`, `operator`, `admin`)
+- `x-user` identifies actor for write/audit events
+- if `x-role` is omitted, backend uses `APP_DEFAULT_ROLE`
+
+Phase 4 reporting/export endpoints:
+
+- `GET /api/reports/summary`
+- `GET /api/reports/summary.json`
+- `GET /api/reports/requests.csv`
+- `GET /api/diagnostics/deployment-readiness` (admin role)
+
+Operational permissions:
+
+- `viewer`: read requests + report summary
+- `operator`: viewer + request writes + exports
+- `admin`: operator + deployment diagnostics
+
+Forbidden actions return `403` with `errorCode=forbidden`.
+
+Deployment readiness check:
+
+```bash
+npm run check:ready
+```
+
+References:
+
+- `docs/phase-4-operational-readiness.md`
+- `docs/deployment-readiness.md`
+
 ## Common failures
 
 - `filemaker_config_incomplete`: Missing server/database/credentials.

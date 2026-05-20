@@ -241,3 +241,59 @@ test("notes, document placeholders, and response metadata update through service
   assert.equal(updated.response.artifactName, "response.pdf");
   assert.equal(updated.response.artifactStatus, "placeholder");
 });
+
+test("service builds operational summary report", async () => {
+  const requestA = createEmptyRequest({
+    id: "REQ-A",
+    stage: STAGES.DRAFT,
+    priority: "high",
+    assignedTo: "ops_a",
+    dueDate: "2001-01-01",
+  });
+  const requestB = createEmptyRequest({
+    id: "REQ-B",
+    stage: STAGES.COMPLETED,
+    priority: "low",
+    assignedTo: "ops_b",
+  });
+
+  const repository = createInMemoryRepository([requestA, requestB]);
+  const service = new RequestService({
+    repository,
+    logger: console,
+    mode: "mock",
+  });
+
+  const summary = await service.getReportSummary();
+  assert.equal(summary.totals.requests, 2);
+  assert.equal(summary.totals.activeRequests, 1);
+  assert.equal(summary.totals.completedRequests, 1);
+  assert.equal(summary.stageCounts.draft, 1);
+  assert.equal(summary.stageCounts.completed, 1);
+  assert.equal(summary.priorityCounts.high, 1);
+  assert.equal(summary.priorityCounts.low, 1);
+  assert.equal(summary.assigneeCounts.ops_a, 1);
+});
+
+test("deployment readiness probe returns checks", async () => {
+  const repository = createInMemoryRepository();
+  const service = new RequestService({
+    repository,
+    logger: console,
+    mode: "mock",
+  });
+  service.config = {
+    defaultRole: "operator",
+    allowMockFallback: true,
+    filemaker: {
+      schemaValidation: {
+        ready: false,
+      },
+    },
+  };
+
+  const readiness = await service.deploymentReadinessProbe();
+  assert.equal(typeof readiness.ready, "boolean");
+  assert.ok(Array.isArray(readiness.checks));
+  assert.equal(typeof readiness.summary.requests, "number");
+});

@@ -63,6 +63,28 @@ Recommended:
 - `GET /api/diagnostics/v2-readiness`
 - `GET /api/diagnostics/container-mapping`
 - `GET|POST /api/diagnostics/stability`
+- `GET /api/diagnostics/deployment-readiness` (admin role)
+
+## Roles and reporting
+
+Role headers:
+
+- `x-role`: `viewer`, `operator`, `admin`
+- `x-user`: actor label for write/audit operations
+
+Reporting/export endpoints:
+
+- `GET /api/reports/summary`
+- `GET /api/reports/summary.json`
+- `GET /api/reports/requests.csv`
+
+Default role can be configured with `APP_DEFAULT_ROLE`.
+
+Deployment readiness check:
+
+```bash
+npm run check:ready
+```
 
 ## Tests
 
@@ -93,3 +115,5 @@ FILEMAKER_ENABLE_MUTATION_SMOKE=true npm run smoke:filemaker
 - [Phase 2 Persistence](docs/phase-2-persistence.md)
 - [FileMaker Data API Integration](docs/filemaker-data-api.md)
 - [Runbook](docs/runbook.md)
+- [Phase 4 Operational Readiness](docs/phase-4-operational-readiness.md)
+- [Deployment Readiness](docs/deployment-readiness.md)

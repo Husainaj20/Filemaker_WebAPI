@@ -145,6 +145,7 @@ export function loadConfig() {
     host: process.env.APP_HOST || "127.0.0.1",
     port: Number.parseInt(process.env.APP_PORT || "3080", 10),
     logLevel: process.env.LOG_LEVEL || "info",
+    defaultRole: process.env.APP_DEFAULT_ROLE || "operator",
     dataMode: resolveDataMode(),
     allowMockFallback: resolveAllowMockFallback(),
     projectRoot,

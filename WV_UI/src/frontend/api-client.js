@@ -8,13 +8,20 @@ export class ApiError extends Error {
   }
 }
 
+let activeRole = "operator";
+
+function buildHeaders() {
+  return {
+    "content-type": "application/json",
+    "x-user": "web_operator",
+    "x-role": activeRole,
+  };
+}
+
 async function request(method, url, body) {
   const response = await fetch(url, {
     method,
-    headers: {
-      "content-type": "application/json",
-      "x-user": "web_operator",
-    },
+    headers: buildHeaders(),
     body: body ? JSON.stringify(body) : undefined,
   });
 
@@ -53,8 +60,20 @@ function buildQuery(params = {}) {
 }
 
 export const apiClient = {
+  setRole(role) {
+    activeRole = String(role || "operator").trim().toLowerCase() || "operator";
+  },
+  getRole() {
+    return activeRole;
+  },
   getHealth() {
     return request("GET", "/api/health");
+  },
+  getReportSummary(filters = {}) {
+    return request("GET", `/api/reports/summary${buildQuery(filters)}`);
+  },
+  getReportSummaryJson(filters = {}) {
+    return request("GET", `/api/reports/summary.json${buildQuery(filters)}`);
   },
   listRequests(filters = {}) {
     return request("GET", `/api/requests${buildQuery(filters)}`);
@@ -143,6 +162,7 @@ export const apiClient = {
         method: "GET",
         headers: {
           "x-user": "web_operator",
+          "x-role": activeRole,
         },
       },
     );
@@ -165,6 +185,42 @@ export const apiClient = {
         .get("content-disposition")
         ?.match(/filename="([^"]+)"/i)?.[1] || `${kind}.bin`;
     const blob = await response.blob();
+    return {
+      fileName,
+      blob,
+    };
+  },
+  async downloadRequestsCsv(filters = {}) {
+    const response = await fetch(
+      `/api/reports/requests.csv${buildQuery(filters)}`,
+      {
+        method: "GET",
+        headers: {
+          "x-user": "web_operator",
+          "x-role": activeRole,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      let message = "CSV export failed.";
+      try {
+        const payload = await response.json();
+        message = payload.error || payload.error?.message || message;
+      } catch (error) {
+        // Best-effort parse only.
+      }
+      throw new ApiError(message, {
+        code: "csv_export_failed",
+      });
+    }
+
+    const fileName =
+      response.headers
+        .get("content-disposition")
+        ?.match(/filename="([^"]+)"/i)?.[1] || "requests-export.csv";
+    const blob = await response.blob();
+
     return {
       fileName,
       blob,

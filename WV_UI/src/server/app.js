@@ -16,6 +16,11 @@ import { FileMakerRequestRepository } from "./repositories/filemaker-request-rep
 import { MockRequestRepository } from "./repositories/mock-request-repository.js";
 import { RequestPersistenceAdapter } from "./services/request-persistence-adapter.js";
 import { RequestService } from "./services/request-service.js";
+import {
+  getRolePermissions,
+  hasPermission,
+  normalizeRole,
+} from "../shared/requests/role-policy.js";
 
 function createTraceId() {
   return `trace_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -43,6 +48,85 @@ function sendItemsResponse(response, statusCode, items, traceId) {
     data: items,
     traceId,
   });
+}
+
+function buildRequestContext(request, config) {
+  const actor = String(request.headers["x-user"] || "api_user").trim() || "api_user";
+  const role = normalizeRole(request.headers["x-role"], config.defaultRole);
+  return {
+    actor,
+    role,
+  };
+}
+
+function requirePermission(requestContext, permission) {
+  if (hasPermission(requestContext.role, permission)) {
+    return;
+  }
+
+  throw new AppError("Forbidden for current role.", {
+    statusCode: 403,
+    code: "forbidden",
+    details: {
+      role: requestContext.role,
+      actor: requestContext.actor,
+      requiredPermission: permission,
+      rolePermissions: getRolePermissions(requestContext.role),
+    },
+    expose: true,
+  });
+}
+
+function csvEscape(value) {
+  const normalized = String(value ?? "");
+  return `"${normalized.replace(/"/g, '""')}"`;
+}
+
+function buildRequestsCsv(rows = []) {
+  const header = [
+    "id",
+    "requestNumber",
+    "title",
+    "stage",
+    "status",
+    "priority",
+    "assignedTo",
+    "requester",
+    "recordId",
+    "recordLabel",
+    "requestDate",
+    "dueDate",
+    "sentAt",
+    "completedOn",
+    "updatedAt",
+  ];
+
+  const lines = [header.map(csvEscape).join(",")];
+  for (const row of rows) {
+    lines.push(
+      [
+        row.id,
+        row.requestNumber,
+        row.title,
+        row.stage,
+        row.status,
+        row.priority,
+        row.assignedTo,
+        row.requester,
+        row.recordId,
+        row.recordLabel,
+        row.requestDate,
+        row.dueDate,
+        row.requestEmail?.sentAt,
+        row.response?.completedOn,
+        row.updatedAt,
+      ]
+        .map(csvEscape)
+        .join(","),
+    );
+  }
+
+  return `${lines.join("\n")}\n`;
 }
 
 function createMockRepository(config) {
@@ -99,12 +183,77 @@ function createRepository(config, logger) {
   });
 }
 
-async function routeRequest(adapter, service, request, response, url, traceId) {
+async function routeRequest(
+  adapter,
+  service,
+  request,
+  response,
+  url,
+  traceId,
+  requestContext,
+) {
   if (url.pathname === "/api/health" && request.method === "GET") {
     return sendItemResponse(response, 200, await adapter.health(), traceId);
   }
 
+  if (url.pathname === "/api/reports/summary" && request.method === "GET") {
+    requirePermission(requestContext, "reports:view");
+    const parentRecordId = url.searchParams.get("parentRecordId") || "";
+    const activeOnly = readBooleanQueryParam(url.searchParams, "activeOnly");
+    return sendItemResponse(
+      response,
+      200,
+      await adapter.getReportSummary({
+        parentRecordId,
+        activeOnly,
+      }),
+      traceId,
+    );
+  }
+
+  if (url.pathname === "/api/reports/summary.json" && request.method === "GET") {
+    requirePermission(requestContext, "reports:export");
+    const parentRecordId = url.searchParams.get("parentRecordId") || "";
+    const activeOnly = readBooleanQueryParam(url.searchParams, "activeOnly");
+    const report = await adapter.getReportSummary({
+      parentRecordId,
+      activeOnly,
+    });
+    return sendJson(
+      response,
+      200,
+      {
+        ok: true,
+        item: report,
+        data: report,
+        traceId,
+      },
+      {
+        "content-disposition": `attachment; filename="request-summary-${new Date().toISOString().slice(0, 10)}.json"`,
+      },
+    );
+  }
+
+  if (url.pathname === "/api/reports/requests.csv" && request.method === "GET") {
+    requirePermission(requestContext, "reports:export");
+    const parentRecordId = url.searchParams.get("parentRecordId") || "";
+    const activeOnly = readBooleanQueryParam(url.searchParams, "activeOnly");
+    const requestsForExport = await adapter.listRequestsForExport({
+      parentRecordId,
+      activeOnly,
+    });
+    const csv = buildRequestsCsv(requestsForExport);
+    response.writeHead(200, {
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": `attachment; filename="requests-export-${new Date().toISOString().slice(0, 10)}.csv"`,
+      "cache-control": "no-store",
+    });
+    response.end(csv);
+    return;
+  }
+
   if (url.pathname === "/api/requests" && request.method === "GET") {
+    requirePermission(requestContext, "requests:read");
     const parentRecordId = url.searchParams.get("parentRecordId") || "";
     const activeOnly = readBooleanQueryParam(url.searchParams, "activeOnly");
     return sendItemsResponse(
@@ -119,6 +268,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
   }
 
   if (url.pathname === "/api/parents" && request.method === "GET") {
+    requirePermission(requestContext, "requests:read");
     const activeOnly = readBooleanQueryParam(url.searchParams, "activeOnly");
     return sendItemsResponse(
       response,
@@ -129,6 +279,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
   }
 
   if (url.pathname === "/api/records" && request.method === "GET") {
+    requirePermission(requestContext, "requests:read");
     const activeOnly = readBooleanQueryParam(url.searchParams, "activeOnly");
     return sendItemResponse(
       response,
@@ -139,20 +290,19 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
   }
 
   if (url.pathname === "/api/requests" && request.method === "POST") {
+    requirePermission(requestContext, "requests:write");
     const body = await readJsonBody(request);
     return sendItemResponse(
       response,
       201,
-      await adapter.createRequest(
-        body,
-        request.headers["x-user"] || "api_user",
-      ),
+      await adapter.createRequest(body, requestContext.actor),
       traceId,
     );
   }
 
   const requestMatch = url.pathname.match(/^\/api\/requests\/([^/]+)$/);
   if (requestMatch && request.method === "GET") {
+    requirePermission(requestContext, "requests:read");
     return sendItemResponse(
       response,
       200,
@@ -162,6 +312,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
   }
 
   if (requestMatch && ["PUT", "PATCH"].includes(request.method)) {
+    requirePermission(requestContext, "requests:write");
     const body = await readJsonBody(request);
     return sendItemResponse(
       response,
@@ -169,7 +320,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
       await adapter.updateRequest(
         requestMatch[1],
         body,
-        request.headers["x-user"] || "api_user",
+        requestContext.actor,
       ),
       traceId,
     );
@@ -177,6 +328,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
 
   const auditMatch = url.pathname.match(/^\/api\/requests\/([^/]+)\/audit$/);
   if (auditMatch && request.method === "GET") {
+    requirePermission(requestContext, "requests:read");
     return sendItemsResponse(
       response,
       200,
@@ -187,6 +339,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
 
   const noteMatch = url.pathname.match(/^\/api\/requests\/([^/]+)\/notes$/);
   if (noteMatch && request.method === "POST") {
+    requirePermission(requestContext, "requests:write");
     const body = await readJsonBody(request);
     return sendItemResponse(
       response,
@@ -194,7 +347,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
       await adapter.addRequestNote(
         noteMatch[1],
         body,
-        request.headers["x-user"] || "api_user",
+        requestContext.actor,
       ),
       traceId,
     );
@@ -204,6 +357,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
     /^\/api\/requests\/([^/]+)\/documents$/,
   );
   if (documentsListMatch && request.method === "GET") {
+    requirePermission(requestContext, "requests:read");
     return sendItemsResponse(
       response,
       200,
@@ -216,6 +370,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
     /^\/api\/requests\/([^/]+)\/documents\/placeholder$/,
   );
   if (documentsPlaceholderMatch && request.method === "POST") {
+    requirePermission(requestContext, "requests:write");
     const body = await readJsonBody(request);
     return sendItemResponse(
       response,
@@ -223,7 +378,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
       await adapter.addDocumentPlaceholder(
         documentsPlaceholderMatch[1],
         body,
-        request.headers["x-user"] || "api_user",
+        requestContext.actor,
       ),
       traceId,
     );
@@ -233,6 +388,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
     /^\/api\/requests\/([^/]+)\/response$/,
   );
   if (responsePatchMatch && request.method === "PATCH") {
+    requirePermission(requestContext, "requests:write");
     const body = await readJsonBody(request);
     return sendItemResponse(
       response,
@@ -240,7 +396,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
       await adapter.updateRequestResponse(
         responsePatchMatch[1],
         body,
-        request.headers["x-user"] || "api_user",
+        requestContext.actor,
       ),
       traceId,
     );
@@ -248,26 +404,22 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
 
   const sendMatch = url.pathname.match(/^\/api\/requests\/([^/]+)\/send$/);
   if (sendMatch && request.method === "POST") {
+    requirePermission(requestContext, "requests:write");
     return sendItemResponse(
       response,
       200,
-      await adapter.sendRequest(
-        sendMatch[1],
-        request.headers["x-user"] || "api_user",
-      ),
+      await adapter.sendRequest(sendMatch[1], requestContext.actor),
       traceId,
     );
   }
 
   const startMatch = url.pathname.match(/^\/api\/requests\/([^/]+)\/start$/);
   if (startMatch && request.method === "POST") {
+    requirePermission(requestContext, "requests:write");
     return sendItemResponse(
       response,
       200,
-      await adapter.startRequest(
-        startMatch[1],
-        request.headers["x-user"] || "api_user",
-      ),
+      await adapter.startRequest(startMatch[1], requestContext.actor),
       traceId,
     );
   }
@@ -276,13 +428,11 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
     /^\/api\/requests\/([^/]+)\/complete$/,
   );
   if (completeMatch && request.method === "POST") {
+    requirePermission(requestContext, "requests:write");
     return sendItemResponse(
       response,
       200,
-      await adapter.completeRequest(
-        completeMatch[1],
-        request.headers["x-user"] || "api_user",
-      ),
+      await adapter.completeRequest(completeMatch[1], requestContext.actor),
       traceId,
     );
   }
@@ -291,6 +441,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
     /^\/api\/requests\/([^/]+)\/transition$/,
   );
   if (transitionMatch && request.method === "POST") {
+    requirePermission(requestContext, "requests:write");
     const body = await readJsonBody(request);
     return sendItemResponse(
       response,
@@ -298,7 +449,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
       await adapter.transitionRequest(
         transitionMatch[1],
         body.targetStage,
-        request.headers["x-user"] || body.actor || "api_user",
+        requestContext.actor || body.actor || "api_user",
         body.reason || "",
       ),
       traceId,
@@ -309,6 +460,7 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
     /^\/api\/requests\/([^/]+)\/documents\/([^/]+)$/,
   );
   if (documentMatch && request.method === "GET") {
+    requirePermission(requestContext, "requests:read");
     const file = await adapter.downloadDocument(
       documentMatch[1],
       documentMatch[2],
@@ -359,6 +511,19 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
       response,
       200,
       await adapter.stabilityProbe(iterations),
+      traceId,
+    );
+  }
+
+  if (
+    url.pathname === "/api/diagnostics/deployment-readiness" &&
+    request.method === "GET"
+  ) {
+    requirePermission(requestContext, "diagnostics:view");
+    return sendItemResponse(
+      response,
+      200,
+      await adapter.deploymentReadinessProbe(),
       traceId,
     );
   }
@@ -428,14 +593,26 @@ export function createApplication(overrides = {}) {
       request.url,
       `http://${request.headers.host || "localhost"}`,
     );
+    const requestContext = buildRequestContext(request, config);
     response.setHeader("x-trace-id", traceId);
+    response.setHeader("x-role", requestContext.role);
 
     try {
-      await routeRequest(adapter, service, request, response, url, traceId);
+      await routeRequest(
+        adapter,
+        service,
+        request,
+        response,
+        url,
+        traceId,
+        requestContext,
+      );
       logger.info("request.completed", {
         traceId,
         method: request.method,
         path: url.pathname,
+        role: requestContext.role,
+        actor: requestContext.actor,
         statusCode: response.statusCode,
         durationMs: Date.now() - startedAt,
       });
@@ -445,6 +622,8 @@ export function createApplication(overrides = {}) {
         traceId,
         method: request.method,
         path: url.pathname,
+        role: requestContext.role,
+        actor: requestContext.actor,
         statusCode: appError.statusCode,
         errorCode: appError.code,
         details: appError.details,

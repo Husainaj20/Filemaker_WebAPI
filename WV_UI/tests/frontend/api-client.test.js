@@ -106,3 +106,77 @@ test("frontend detail helpers call note/document/response endpoints", async () =
   assert.equal(calls[4].url, "/api/requests/REQ-3/response");
   assert.equal(calls[4].options.method, "PATCH");
 });
+
+test("frontend client sends selected role header", async () => {
+  const calls = [];
+  const originalFetch = global.fetch;
+
+  global.fetch = async (url, options = {}) => {
+    calls.push({ url, options });
+    return {
+      ok: true,
+      async json() {
+        return {
+          data: { ok: true },
+        };
+      },
+    };
+  };
+
+  try {
+    apiClient.setRole("viewer");
+    await apiClient.getReportSummary();
+  } finally {
+    apiClient.setRole("operator");
+    global.fetch = originalFetch;
+  }
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "/api/reports/summary");
+  assert.equal(calls[0].options.headers["x-role"], "viewer");
+});
+
+test("frontend reporting helpers call summary and csv routes", async () => {
+  const calls = [];
+  const originalFetch = global.fetch;
+
+  global.fetch = async (url, options = {}) => {
+    calls.push({ url, options });
+    return {
+      ok: true,
+      headers: {
+        get(name) {
+          if (String(name).toLowerCase() === "content-disposition") {
+            return 'attachment; filename="requests-export.csv"';
+          }
+          return "";
+        },
+      },
+      async json() {
+        return {
+          data: { totals: { requests: 1 } },
+          item: { totals: { requests: 1 } },
+        };
+      },
+      async blob() {
+        return new Blob(["id,title\n1,Sample\n"], {
+          type: "text/csv",
+        });
+      },
+    };
+  };
+
+  try {
+    await apiClient.getReportSummary({ activeOnly: true });
+    await apiClient.getReportSummaryJson({ parentRecordId: "REC-1" });
+    await apiClient.downloadRequestsCsv({ activeOnly: true });
+  } finally {
+    global.fetch = originalFetch;
+  }
+
+  assert.equal(calls.length, 3);
+  assert.equal(calls[0].url, "/api/reports/summary?activeOnly=true");
+  assert.equal(calls[1].url, "/api/reports/summary.json?parentRecordId=REC-1");
+  assert.equal(calls[2].url, "/api/reports/requests.csv?activeOnly=true");
+  assert.equal(calls[2].options.method, "GET");
+});
