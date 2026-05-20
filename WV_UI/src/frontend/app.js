@@ -19,6 +19,13 @@ import {
   REQUEST_TYPES,
 } from "../shared/requests/request-types.js";
 import { getRolePermissions, ROLES } from "../shared/requests/role-policy.js";
+import {
+  buildFileMakerPayload,
+  callFileMakerScript,
+  getBridgeDiagnostics,
+  getRuntimeContext,
+  isFileMakerBridgeAvailable,
+} from "./webviewer-bridge.js";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -130,6 +137,9 @@ export class ExcessLandApp {
       detailDocuments: [],
       role: "operator",
       reportSummary: null,
+      runtimeContext: getRuntimeContext(),
+      bridgeDiagnostics: getBridgeDiagnostics(),
+      webviewerDiagnostics: null,
     };
 
     this.handleClick = this.handleClick.bind(this);
@@ -138,11 +148,33 @@ export class ExcessLandApp {
   }
 
   async init() {
+    this.refreshRuntimeContext();
     apiClient.setRole(this.state.role);
     this.root.addEventListener("click", this.handleClick);
     this.root.addEventListener("input", this.handleInput);
     this.root.addEventListener("change", this.handleChange);
     await this.reload();
+    await this.applyInitialDeepLink();
+  }
+
+  refreshRuntimeContext() {
+    this.state.runtimeContext = getRuntimeContext();
+    this.state.bridgeDiagnostics = getBridgeDiagnostics();
+    apiClient.setRuntimeContext(this.state.runtimeContext);
+  }
+
+  async loadWebViewerDiagnostics(options = {}) {
+    try {
+      this.state.webviewerDiagnostics = await apiClient.getWebViewerDiagnostics();
+    } catch (error) {
+      this.state.webviewerDiagnostics = null;
+      if (!options.silent) {
+        this.state.flash = {
+          tone: "danger",
+          message: this.describeError(error),
+        };
+      }
+    }
   }
 
   get rolePermissions() {
@@ -244,6 +276,7 @@ export class ExcessLandApp {
 
   async reload(options = {}) {
     const preserveFlash = options.preserveFlash === true;
+    this.refreshRuntimeContext();
     this.state.loading = true;
     this.render();
 
@@ -299,6 +332,7 @@ export class ExcessLandApp {
         this.state.selectedRequestId || this.state.requests[0]?.id || "";
 
       await this.loadReportSummary({ silent: true });
+      await this.loadWebViewerDiagnostics({ silent: true });
     } catch (error) {
       this.state.flash = {
         tone: "danger",
@@ -311,6 +345,69 @@ export class ExcessLandApp {
 
     if (this.state.selectedRequestId) {
       void this.loadRequestDetail(this.state.selectedRequestId, { silent: true });
+    }
+  }
+
+  async applyInitialDeepLink() {
+    const requestId = String(this.state.runtimeContext.requestId || "").trim();
+    if (!requestId) return;
+
+    const known = this.state.requests.some(
+      (request) => String(request.id) === requestId,
+    );
+
+    if (!known) {
+      this.state.flash = {
+        tone: "info",
+        message: `Deep-link request ${requestId} was not found in the current list.`,
+      };
+      this.render();
+      return;
+    }
+
+    await this.openRequest(requestId, {
+      source: "deep_link",
+      announceMissingBridge: true,
+    });
+  }
+
+  async openRequest(requestId, options = {}) {
+    const normalizedRequestId = String(requestId || "").trim();
+    if (!normalizedRequestId) return;
+
+    this.state.selectedRequestId = normalizedRequestId;
+    this.render();
+    void this.loadRequestDetail(normalizedRequestId, { silent: true });
+
+    if (!this.state.runtimeContext.embedded) {
+      return;
+    }
+
+    const selected = this.state.requests.find(
+      (request) => String(request.id) === normalizedRequestId,
+    );
+
+    const payload = buildFileMakerPayload(
+      "request_open",
+      normalizedRequestId,
+      {
+        source: options.source || "ui",
+        recordId: selected?.recordId || "",
+        role: this.state.role,
+      },
+    );
+
+    const result = callFileMakerScript("WV_Request_Open", payload, {
+      allowFmpUrlFallback: true,
+    });
+
+    if (!result.ok && options.announceMissingBridge) {
+      this.state.flash = {
+        tone: "info",
+        message:
+          "Embedded runtime detected but FileMaker bridge is unavailable. Using local detail view only.",
+      };
+      this.render();
     }
   }
 
@@ -878,9 +975,10 @@ export class ExcessLandApp {
     }
 
     if (action === "select-request") {
-      this.state.selectedRequestId = actionTarget.dataset.requestId;
-      this.render();
-      void this.loadRequestDetail(this.state.selectedRequestId, { silent: true });
+      void this.openRequest(actionTarget.dataset.requestId, {
+        source: "request_list",
+        announceMissingBridge: true,
+      });
       return;
     }
 
@@ -1935,6 +2033,47 @@ export class ExcessLandApp {
     `;
   }
 
+  renderRuntimeDiagnosticsPanel() {
+    const runtime = this.state.runtimeContext || {};
+    const bridge = this.state.bridgeDiagnostics || {};
+    const backend = this.state.webviewerDiagnostics || {};
+    const warnings = Array.isArray(backend.warnings) ? backend.warnings : [];
+
+    return `
+      <section class="card report-card">
+        <div class="card-header">
+          <h3>Embedded Runtime Diagnostics</h3>
+          <div class="subtle">Runtime: ${escapeHtml(runtime.mode || "standalone")}</div>
+        </div>
+        <div class="detail-grid">
+          <div class="field"><span>Embedded</span><strong>${escapeHtml(String(Boolean(runtime.embedded)))}</strong></div>
+          <div class="field"><span>Bridge Available</span><strong>${escapeHtml(String(Boolean(bridge.bridgeAvailable || isFileMakerBridgeAvailable())))}</strong></div>
+          <div class="field"><span>Backend Mode</span><strong>${escapeHtml(this.state.health?.mode || "unknown")}</strong></div>
+          <div class="field"><span>Active Role</span><strong>${escapeHtml(this.state.role)}</strong></div>
+          <div class="field"><span>Launch Source</span><strong>${escapeHtml(runtime.launchSource || "direct")}</strong></div>
+          <div class="field"><span>Mapping Ready</span><strong>${escapeHtml(String(Boolean(this.state.health?.diagnostics?.filemaker?.mappingReady ?? true)))}</strong></div>
+          <div class="field"><span>App Version</span><strong>${escapeHtml(backend.app?.version || "0.1.0")}</strong></div>
+        </div>
+        <div class="timeline">
+          ${
+            warnings.length
+              ? warnings
+                  .map(
+                    (warning) => `
+                      <article class="timeline-item">
+                        <div class="timeline-meta">${escapeHtml(warning.code || "warning")}</div>
+                        <p>${escapeHtml(warning.message || "Runtime warning")}</p>
+                      </article>
+                    `,
+                  )
+                  .join("")
+              : '<div class="empty-inline">No runtime warnings.</div>'
+          }
+        </div>
+      </section>
+    `;
+  }
+
   render() {
     const totalRequests = this.state.requests.length;
     const waitingCount = this.state.requests.filter(
@@ -1987,7 +2126,7 @@ export class ExcessLandApp {
           <div class="diagnostic-card">
             <div class="eyebrow">Runtime</div>
             <strong>${escapeHtml(this.state.health?.mode || "loading")}</strong>
-            <p>Frontend only talks to backend APIs. FileMaker transport stays server-side.</p>
+            <p>Mode: ${escapeHtml(this.state.runtimeContext.mode || "standalone")} · Bridge: ${escapeHtml(String(Boolean(this.state.bridgeDiagnostics.bridgeAvailable)))}</p>
           </div>
         </aside>
         <main class="shell-main">
@@ -2047,6 +2186,7 @@ export class ExcessLandApp {
             </article>
           </section>
           ${this.renderReportPanel()}
+          ${this.renderRuntimeDiagnosticsPanel()}
           ${
             this.state.activeModule !== "requests"
               ? `

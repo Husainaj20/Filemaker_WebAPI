@@ -39,6 +39,12 @@ function normalizeReportFilters(filters = {}) {
   };
 }
 
+function toBoolean(value) {
+  return ["1", "true", "yes", "on"].includes(
+    String(value || "").trim().toLowerCase(),
+  );
+}
+
 function mapAttachmentToDocumentEntry(kind, attachment, containerFields = {}) {
   if (!attachment) return null;
   return {
@@ -916,6 +922,89 @@ export class RequestService {
         fallbackActive: health.fallbackActive,
       },
       summary: reportSummary.totals,
+    };
+  }
+
+  async webviewerDiagnostics(requestContext = {}, runtimeHints = {}) {
+    const health = await this.health();
+    const appVersion = String(
+      this.config?.appVersion || process.env.npm_package_version || "0.1.0",
+    );
+    const appEnvironment = String(this.config?.appEnvironment || "development");
+    const runtimeMode = String(runtimeHints.runtimeMode || "standalone");
+    const embedded = toBoolean(runtimeHints.embedded);
+    const fileMakerBridgeAvailable = toBoolean(
+      runtimeHints.fileMakerBridgeAvailable,
+    );
+
+    const warnings = [];
+    if (appEnvironment === "production" && this.requestedMode === "mock") {
+      warnings.push({
+        code: "mock_mode_production_warning",
+        message:
+          "APP_DATA_MODE=mock is not recommended for real production workloads.",
+      });
+    }
+
+    if (
+      appEnvironment === "production" &&
+      this.requestedMode === "filemaker" &&
+      this.config?.allowMockFallback
+    ) {
+      warnings.push({
+        code: "fallback_masks_outage_warning",
+        message:
+          "APP_ALLOW_MOCK_FALLBACK=true can mask FileMaker outages in production.",
+      });
+    }
+
+    if (embedded && !fileMakerBridgeAvailable) {
+      warnings.push({
+        code: "bridge_unavailable",
+        message:
+          "Embedded runtime detected but FileMaker bridge is unavailable.",
+      });
+    }
+
+    if (
+      this.requestedMode === "filemaker" &&
+      !health.fallbackActive &&
+      !health.diagnostics?.filemaker?.mappingReady
+    ) {
+      warnings.push({
+        code: "mapping_not_ready",
+        message:
+          "FileMaker mapping diagnostics are not ready for strict runtime.",
+      });
+    }
+
+    return {
+      generatedAt: nowIso(),
+      role: String(requestContext.role || "operator"),
+      actor: String(requestContext.actor || "api_user"),
+      runtime: {
+        mode: runtimeMode,
+        embedded,
+        fileMakerBridgeAvailable,
+        launchSource: String(runtimeHints.launchSource || "direct"),
+        requestId: String(runtimeHints.requestId || ""),
+        recordId: String(runtimeHints.recordId || ""),
+      },
+      app: {
+        version: appVersion,
+        environment: appEnvironment,
+      },
+      backend: {
+        requestedMode: this.requestedMode,
+        activeMode: health.activeMode,
+        fallbackActive: Boolean(health.fallbackActive),
+        defaultRole: String(this.config?.defaultRole || "operator"),
+      },
+      mapping: {
+        ready: Boolean(health.diagnostics?.filemaker?.mappingReady),
+        confirmed: Boolean(health.diagnostics?.filemaker?.mappingConfirmed),
+      },
+      warnings,
     };
   }
 

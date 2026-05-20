@@ -40,6 +40,7 @@ In safe-fallback mode, FileMaker failures switch runtime persistence to mock and
   - `/api/diagnostics/v2-readiness`
   - `/api/diagnostics/container-mapping`
   - `/api/diagnostics/stability?iterations=10`
+  - `/api/diagnostics/webviewer`
   - `/api/health`
 
 ## Switching to FileMaker
@@ -158,6 +159,33 @@ References:
 
 - `docs/phase-4-operational-readiness.md`
 - `docs/deployment-readiness.md`
+
+## Phase 5 WebViewer hardening
+
+WebViewer runtime support:
+
+- Runtime helper module: `src/frontend/webviewer-bridge.js`
+- Safe bridge invocation wrapper validates script names and serializes payloads
+- Embedded-mode request open attempts `WV_Request_Open` and falls back safely
+
+WebViewer diagnostics endpoint:
+
+- `GET /api/diagnostics/webviewer`
+
+Response includes:
+
+- runtime mode (`standalone` or `webviewer`)
+- embedded and bridge availability flags
+- role and backend mode
+- mapping readiness summary
+- app version/environment metadata
+- production risk warnings (mock mode and fallback masking)
+
+References:
+
+- `docs/phase-5-webviewer-filemaker-hardening.md`
+- `docs/webviewer-integration.md`
+- `docs/production-runbook.md`
 
 ## Common failures
 

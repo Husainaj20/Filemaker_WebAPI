@@ -129,6 +129,33 @@ function buildRequestsCsv(rows = []) {
   return `${lines.join("\n")}\n`;
 }
 
+function buildRuntimeHints(request, url) {
+  return {
+    runtimeMode:
+      request.headers["x-runtime-mode"] || url.searchParams.get("runtime") || "standalone",
+    embedded:
+      request.headers["x-runtime-embedded"] ||
+      url.searchParams.get("embedded") ||
+      "false",
+    fileMakerBridgeAvailable:
+      request.headers["x-filemaker-bridge"] ||
+      url.searchParams.get("bridge") ||
+      "false",
+    launchSource:
+      request.headers["x-runtime-launch-source"] ||
+      url.searchParams.get("launch") ||
+      "direct",
+    requestId:
+      request.headers["x-runtime-request-id"] ||
+      url.searchParams.get("requestId") ||
+      "",
+    recordId:
+      request.headers["x-runtime-record-id"] ||
+      url.searchParams.get("recordId") ||
+      "",
+  };
+}
+
 function createMockRepository(config) {
   return new MockRequestRepository({
     filePath: config.mockDataFile,
@@ -524,6 +551,20 @@ async function routeRequest(
       response,
       200,
       await adapter.deploymentReadinessProbe(),
+      traceId,
+    );
+  }
+
+  if (
+    url.pathname === "/api/diagnostics/webviewer" &&
+    request.method === "GET"
+  ) {
+    requirePermission(requestContext, "requests:read");
+    const runtimeHints = buildRuntimeHints(request, url);
+    return sendItemResponse(
+      response,
+      200,
+      await adapter.webviewerDiagnostics(requestContext, runtimeHints),
       traceId,
     );
   }

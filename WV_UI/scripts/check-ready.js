@@ -45,12 +45,20 @@ async function main() {
   const readiness = await request("/api/diagnostics/deployment-readiness");
   assertOk(readiness, "deployment readiness");
 
+  const webviewer = await request(
+    "/api/diagnostics/webviewer?runtime=standalone&embedded=false",
+  );
+  assertOk(webviewer, "webviewer diagnostics");
+
   const readinessItem = readiness.payload?.item || readiness.payload?.data || {};
   const checks = Array.isArray(readinessItem.checks) ? readinessItem.checks : [];
 
   console.log(`[check:ready] health.ready=${Boolean(health.payload?.item?.ready)}`);
   console.log(
     `[check:ready] summary.total=${Number(summary.payload?.item?.totals?.requests || 0)}`,
+  );
+  console.log(
+    `[check:ready] webviewer.runtime=${String(webviewer.payload?.item?.runtime?.mode || "unknown")}`,
   );
 
   for (const check of checks) {

@@ -136,3 +136,29 @@ test("admin role can access deployment-readiness diagnostics", async () => {
     assert.ok(Array.isArray(payload.item.checks));
   });
 });
+
+test("webviewer diagnostics returns safe runtime fields for viewer role", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(
+      `${baseUrl}/api/diagnostics/webviewer?runtime=webviewer&embedded=true&requestId=REQ-77&recordId=REC-10`,
+      {
+        headers: roleHeaders("viewer"),
+      },
+    );
+
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.item.role, "viewer");
+    assert.equal(payload.item.runtime.mode, "webviewer");
+    assert.equal(payload.item.runtime.embedded, true);
+    assert.equal(payload.item.runtime.requestId, "REQ-77");
+    assert.equal(payload.item.runtime.recordId, "REC-10");
+    assert.equal(typeof payload.item.backend.activeMode, "string");
+    assert.equal(payload.item.backend.password, undefined);
+    assert.equal(payload.item.backend.username, undefined);
+
+    const serialized = JSON.stringify(payload.item).toLowerCase();
+    assert.equal(serialized.includes("filemaker_password"), false);
+    assert.equal(serialized.includes("password"), false);
+  });
+});

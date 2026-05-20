@@ -180,3 +180,47 @@ test("frontend reporting helpers call summary and csv routes", async () => {
   assert.equal(calls[2].url, "/api/reports/requests.csv?activeOnly=true");
   assert.equal(calls[2].options.method, "GET");
 });
+
+test("frontend diagnostics helper includes runtime headers", async () => {
+  const calls = [];
+  const originalFetch = global.fetch;
+
+  global.fetch = async (url, options = {}) => {
+    calls.push({ url, options });
+    return {
+      ok: true,
+      async json() {
+        return {
+          item: { runtime: { mode: "standalone" } },
+        };
+      },
+    };
+  };
+
+  try {
+    apiClient.setRole("admin");
+    apiClient.setRuntimeContext({
+      mode: "webviewer",
+      embedded: true,
+      bridgeAvailable: false,
+      launchSource: "deep_link",
+    });
+    await apiClient.getWebViewerDiagnostics();
+  } finally {
+    apiClient.setRole("operator");
+    apiClient.setRuntimeContext({
+      mode: "standalone",
+      embedded: false,
+      bridgeAvailable: false,
+      launchSource: "direct",
+    });
+    global.fetch = originalFetch;
+  }
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "/api/diagnostics/webviewer");
+  assert.equal(calls[0].options.headers["x-role"], "admin");
+  assert.equal(calls[0].options.headers["x-runtime-mode"], "webviewer");
+  assert.equal(calls[0].options.headers["x-runtime-embedded"], "true");
+  assert.equal(calls[0].options.headers["x-filemaker-bridge"], "false");
+});

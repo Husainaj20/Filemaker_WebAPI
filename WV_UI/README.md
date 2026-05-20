@@ -56,6 +56,8 @@ Recommended:
 - `FILEMAKER_TIMEOUT_MS`
 - `FILEMAKER_MAX_RETRIES`
 - `FILEMAKER_SCHEMA_FILE`
+- `APP_ENV`
+- `APP_VERSION`
 
 ## Diagnostics
 
@@ -64,6 +66,14 @@ Recommended:
 - `GET /api/diagnostics/container-mapping`
 - `GET|POST /api/diagnostics/stability`
 - `GET /api/diagnostics/deployment-readiness` (admin role)
+- `GET /api/diagnostics/webviewer`
+
+## WebViewer hardening
+
+- Runtime helper: `src/frontend/webviewer-bridge.js`
+- Embedded request-open bridge script placeholder: `WV_Request_Open`
+- Safe no-op behavior when FileMaker bridge is unavailable
+- Centralized optional `fmp://` URL fallback builder
 
 ## Roles and reporting
 
@@ -117,3 +127,6 @@ FILEMAKER_ENABLE_MUTATION_SMOKE=true npm run smoke:filemaker
 - [Runbook](docs/runbook.md)
 - [Phase 4 Operational Readiness](docs/phase-4-operational-readiness.md)
 - [Deployment Readiness](docs/deployment-readiness.md)
+- [Phase 5 WebViewer Hardening](docs/phase-5-webviewer-filemaker-hardening.md)
+- [WebViewer Integration](docs/webviewer-integration.md)
+- [Production Runbook](docs/production-runbook.md)

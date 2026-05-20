@@ -99,4 +99,8 @@ export class RequestPersistenceAdapter {
   async deploymentReadinessProbe() {
     return this.service.deploymentReadinessProbe();
   }
+
+  async webviewerDiagnostics(requestContext = {}, runtimeHints = {}) {
+    return this.service.webviewerDiagnostics(requestContext, runtimeHints);
+  }
 }

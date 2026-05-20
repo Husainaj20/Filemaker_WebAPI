@@ -9,12 +9,28 @@ export class ApiError extends Error {
 }
 
 let activeRole = "operator";
+let runtimeContext = {
+  runtimeMode: "standalone",
+  embedded: false,
+  bridgeAvailable: false,
+  launchSource: "direct",
+};
+
+function buildRuntimeHeaders() {
+  return {
+    "x-runtime-mode": String(runtimeContext.runtimeMode || "standalone"),
+    "x-runtime-embedded": String(Boolean(runtimeContext.embedded)),
+    "x-filemaker-bridge": String(Boolean(runtimeContext.bridgeAvailable)),
+    "x-runtime-launch-source": String(runtimeContext.launchSource || "direct"),
+  };
+}
 
 function buildHeaders() {
   return {
     "content-type": "application/json",
     "x-user": "web_operator",
     "x-role": activeRole,
+    ...buildRuntimeHeaders(),
   };
 }
 
@@ -66,8 +82,29 @@ export const apiClient = {
   getRole() {
     return activeRole;
   },
+  setRuntimeContext(nextContext = {}) {
+    runtimeContext = {
+      ...runtimeContext,
+      runtimeMode: String(nextContext.mode || nextContext.runtimeMode || runtimeContext.runtimeMode || "standalone"),
+      embedded: Boolean(nextContext.embedded),
+      bridgeAvailable: Boolean(
+        nextContext.bridgeAvailable ?? nextContext.fileMakerBridgeAvailable,
+      ),
+      launchSource: String(
+        nextContext.launchSource || runtimeContext.launchSource || "direct",
+      ),
+    };
+  },
+  getRuntimeContext() {
+    return {
+      ...runtimeContext,
+    };
+  },
   getHealth() {
     return request("GET", "/api/health");
+  },
+  getWebViewerDiagnostics() {
+    return request("GET", "/api/diagnostics/webviewer");
   },
   getReportSummary(filters = {}) {
     return request("GET", `/api/reports/summary${buildQuery(filters)}`);
@@ -163,6 +200,7 @@ export const apiClient = {
         headers: {
           "x-user": "web_operator",
           "x-role": activeRole,
+          ...buildRuntimeHeaders(),
         },
       },
     );
@@ -198,6 +236,7 @@ export const apiClient = {
         headers: {
           "x-user": "web_operator",
           "x-role": activeRole,
+          ...buildRuntimeHeaders(),
         },
       },
     );
