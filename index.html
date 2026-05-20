@@ -1,0 +1,1836 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Requests</title>
+    <!-- ================= CSS (start) ================= -->
+    <style>
+      :root {
+        --bg: #f7f9fb;
+        --card: #ffffff;
+        --border: #e5e7eb;
+        --muted: #6b7280;
+        --text: #111827;
+        --blue: #2563eb;
+        --green: #059669;
+        --red: #dc2626;
+        --amber: #d97706;
+        --gray: #4b5563;
+        --shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+        /* Card spacing system */
+        --card-padding: 16px;
+        --card-gap: 12px;
+        --card-radius: 12px;
+        --card-shadow: 0 8px 20px rgba(16, 24, 40, 0.06);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+      }
+      .container {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        background: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 5;
+      }
+      .brand {
+        font-weight: 700;
+      }
+      .pills {
+        display: flex;
+        gap: 8px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: #fff;
+        font-size: 13px;
+      }
+      .pill.active {
+        background: #eef2ff;
+        border-color: #bfdbfe;
+        color: var(--blue);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+      }
+      /* dashboard grid: left column stacked (two cards), right column spanning both rows */
+      .parent {
+        display: grid;
+        grid-template-columns: 1fr 2fr; /* left narrow, right wider (similar to 4/8 ratio) */
+        grid-template-rows: 1fr; /* single row whose height defines both sides */
+        gap: 16px;
+        align-items: stretch;
+        align-content: center;
+        /* allow children to size correctly inside the grid */
+        min-height: 0;
+      }
+      /* left top (KPI/request) */
+      .div1 {
+        grid-column: 1;
+        grid-row: 1;
+      }
+      /* left bottom (duplicates) */
+      .div2 {
+        grid-column: 1;
+        grid-row: 2;
+      }
+      /* right (recent activity) spans both rows */
+      .div3 {
+        grid-column: 2;
+        grid-row: 1;
+      }
+      /* leftStack will hold the two stacked cards and control their sizing */
+      .leftStack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        height: 100%;
+        /* allow flex children to shrink properly */
+        min-height: 0;
+      }
+      .leftStack .card {
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      /* make the right card stretch to match the total leftStack height (including gap) */
+      .div3 > .card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--card-radius);
+        box-shadow: var(--card-shadow);
+      }
+      /* Compact icons and wheel inside the summary row to avoid oversized SVGs */
+      .summary-row .icon {
+        width: 28px;
+        height: 28px;
+        flex: 0 0 36px;
+      }
+      .summary-row .status-wheel {
+        width: 48px;
+        height: 48px;
+      }
+      .summary-row .content .count {
+        font-size: 20px;
+        margin: 0;
+      }
+      /* Ensure the summary-row cards look like regular cards (restore visuals) */
+      .summary-row {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        margin-top: 8px;
+      }
+      .main-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--card-radius);
+        box-shadow: var(--card-shadow);
+      }
+      .expand-btn {
+        font-size: 13px;
+      }
+      /* Layout for nested flex: left column stacks two cards, right card stretches */
+      .left-flex {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 0;
+      }
+      .summary-row {
+        display: flex;
+        gap: 16px;
+        align-items: stretch;
+        margin-top: 8px;
+      }
+      /* recent card should stretch to match total left column height
+         Use a horizontal layout so the icon sits to the left of the title (like other cards) */
+      .summary-row .recent-card {
+        flex: 1.2 1 0; /* slightly reduced to match smaller recent list (3 items) */
+        min-width: 0;
+        display: flex;
+        flex-direction: row; /* icon + content horizontally */
+        align-items: flex-start;
+        gap: 12px;
+      }
+      /* make content inside recent card take the remaining width and stack title + list */
+      .summary-row .recent-card .content {
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+      }
+      .summary-row .left-flex > .main-card {
+        flex: 1 1 0;
+        display: flex;
+        align-items: flex-start;
+      }
+      .summary-row .icon {
+        margin-top: 4px; /* nudge icons to align visually with left-aligned titles */
+      }
+      .padded {
+        padding: 16px;
+      }
+      .stat {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .num {
+        font-size: 32px;
+        font-weight: 800;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .li {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #cbd5e1;
+        margin-top: 6px;
+      }
+      .blue {
+        background: #60a5fa;
+      }
+      .green {
+        background: #34d399;
+      }
+      .amber {
+        background: #fbbf24;
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      .search {
+        flex: 1;
+        min-width: 220px;
+      }
+      .search input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+      }
+      .sel {
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+      }
+      /* make record list a single full-width column (list view)
+         changed from a tiled grid to vertical list rows that span container */
+      .grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 16px;
+        width: 100%;
+      }
+      /* each request becomes a stacked card: compact row on top, expanded details below */
+      .req {
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease;
+        display: flex;
+        flex-direction: column; /* stack compact + expanded vertically */
+        align-items: stretch;
+        gap: 8px;
+        min-width: 0; /* allow children to truncate */
+      }
+      /* compact one-line appearance (keeps internal inline layout) */
+      .req {
+        padding: 8px 12px;
+        font-size: 13px;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #fff, #fbfdff);
+      }
+      .req:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+      }
+      .title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+      .title h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        /* force single-line truncation for compact rows */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        /* allow the title to shrink so meta can sit on the same line */
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      /* hide expanded controls/details for now; user will add expand later */
+      .req .expanded {
+        display: none;
+        padding-top: 8px;
+      }
+      /* when a row has the 'open' class show expanded details */
+      .req.open .expanded {
+        display: block;
+      }
+      .req .compact {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+      }
+      .compact .meta-inline {
+        color: var(--muted);
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 0 0 auto;
+        margin-left: 8px;
+      }
+      .compact .right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 0 0 auto;
+      }
+      .compact .small-bar {
+        width: 80px;
+        height: 6px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: #eef2ff;
+      }
+      .compact .small-bar > span {
+        display: block;
+        height: 100%;
+        background: var(--blue);
+      }
+      /* inline upload box (modern dashed) */
+      .inline-upload button.req-upload-btn,
+      .inline-upload button.resp-upload-btn {
+        width: 36px;
+        height: 28px;
+        border-radius: 8px;
+        border: 2px dashed var(--border);
+        background: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        color: var(--muted);
+        cursor: pointer;
+      }
+      .inline-upload button.req-upload-btn:hover,
+      .inline-upload button.resp-upload-btn:hover {
+        background: #f8fafc;
+      }
+      /* SVG icons are inserted inline in the button markup; no ::after glyph needed */
+      .inline-field .upload-msg {
+        color: var(--amber);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .badge {
+        display: inline-block;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 12px;
+        background: #f8fafc;
+        color: #334155;
+        white-space: nowrap;
+      }
+      .b-blue {
+        background: #e0eaff;
+        color: var(--blue);
+        border-color: #bfdbfe;
+      }
+      .b-green {
+        background: #ecfdf5;
+        color: var(--green);
+        border-color: #a7f3d0;
+      }
+      .b-red {
+        background: #fee2e2;
+        color: var(--red);
+        border-color: #fecaca;
+      }
+      .b-amber {
+        background: #fef3c7;
+        color: #b45309;
+        border-color: #fde68a;
+      }
+      .b-gray {
+        background: #f3f4f6;
+        color: #374151;
+        border-color: #e5e7eb;
+      }
+      .meta {
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .desc {
+        margin-top: 10px;
+        color: #475569;
+        font-size: 13px;
+        min-height: 36px;
+      }
+      .bar {
+        height: 8px;
+        background: #eef2ff;
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 10px;
+      }
+      .bar > span {
+        display: block;
+        height: 100%;
+        background: var(--blue);
+      }
+      /* per-row task progress with section dots */
+      .taskbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-top: 8px;
+      }
+      .taskbar .task-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #e6edf8; /* neutral */
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        flex: 0 0 10px;
+      }
+      .taskbar .task-dot.done {
+        background: var(--green);
+        border-color: rgba(0, 0, 0, 0.06);
+      }
+      .taskbar .task-label {
+        font-size: 12px;
+        color: var(--muted);
+        margin-left: 6px;
+      }
+      .statusline {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .ok {
+        color: var(--green);
+      }
+      .err {
+        color: var(--red);
+      }
+      #dbg {
+        position: fixed;
+        right: 8px;
+        bottom: 8px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 8px;
+        font: 12px/1.2 ui-monospace, Menlo, monospace;
+        color: #334155;
+        box-shadow: var(--shadow);
+        display: none;
+      }
+      /* Responsive rules for smaller screens */
+      @media (max-width: 900px) {
+        .container {
+          padding: 12px;
+        }
+        .topbar {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 8px;
+        }
+        .topbar .pills {
+          display: none;
+        }
+        .topbar-toggle {
+          display: inline-flex;
+        }
+        .topbar.open .pills {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          width: 100%;
+        }
+        /* Stack summary row vertically on narrow screens */
+        .summary-row {
+          flex-direction: column;
+          gap: 12px;
+        }
+        .summary-row .left-flex,
+        .summary-row .recent-card {
+          width: 100%;
+          flex: none;
+        }
+        .main-card {
+          padding: 12px;
+        }
+        .main-card .icon {
+          width: 22px;
+          height: 22px;
+          flex: 0 0 22px;
+          margin-right: 8px;
+        }
+        .summary-row .status-wheel {
+          width: 40px;
+          height: 40px;
+        }
+        .summary-row .content h2 {
+          font-size: 16px;
+        }
+        .summary-row .content .count {
+          font-size: 18px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .controls {
+          flex-direction: column;
+          gap: 8px;
+        }
+        .search,
+        .sel {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 480px) {
+        :root {
+          --card-padding: 12px;
+          --card-gap: 10px;
+          --card-radius: 10px;
+        }
+        body {
+          font-size: 13px;
+        }
+        .summary-row .status-wheel {
+          display: none; /* hide decorative wheel on very small screens */
+        }
+        .main-card .icon {
+          width: 20px;
+          height: 20px;
+          flex: 0 0 20px;
+        }
+        .summary-row .content h2 {
+          font-size: 15px;
+        }
+        .summary-row .content .count {
+          font-size: 16px;
+        }
+        .activity-list .li {
+          gap: 8px;
+        }
+        /* ensure topbar pills are tappable when expanded */
+        .topbar.open .pills .pill {
+          padding: 12px 10px;
+          min-width: 100%;
+        }
+      }
+    </style>
+
+    <!-- ================= CSS (end) ================= -->
+
+    <!-- ================= HTML MARKUP (start) ================= -->
+  </head>
+  <body>
+    <div class="topbar">
+      <div style="display: flex; align-items: center; gap: 8px">
+        <div class="brand">Project Overview</div>
+        <!-- hamburger toggle (visible on small screens) -->
+        <button
+          id="topbarToggle"
+          class="topbar-toggle"
+          aria-expanded="false"
+          aria-label="Toggle menu"
+          style="display: none"
+        >
+          ☰
+        </button>
+      </div>
+      <div class="pills">
+        <div class="pill active">All Requests</div>
+        <div class="pill">My Requests</div>
+        <div class="pill">Overdue</div>
+        <div class="pill">This Quarter</div>
+      </div>
+    </div>
+
+    <main class="container">
+      <!-- 🔹 Summary row: Requests + Duplicate Requests + Recent Activity (left stacked, right activity) -->
+      <div class="summary-row">
+        <div class="left-flex">
+          <!-- Requests Card -->
+          <div id="mainCard" class="main-card" style="display: flex">
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M3 6a2 2 0 0 1 2-2h5l2 2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z"
+                fill="var(--blue)"
+                opacity="0.15"
+              />
+              <path
+                d="M3 6a2 2 0 0 1 2-2h5l2 2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6z"
+                stroke="var(--blue)"
+                stroke-width="1.8"
+              />
+            </svg>
+
+            <div class="content">
+              <div class="title-row">
+                <h2>Requests</h2>
+              </div>
+              <p id="kpiTotal" class="count">0</p>
+              <div id="projectsMeta" class="meta" style="display: none"></div>
+            </div>
+
+            <!-- Status breakdown wheel (visual only; kept from example) -->
+            <svg class="status-wheel" viewBox="0 0 80 80">
+              <!-- Background circle -->
+              <circle class="bg-circle" />
+              <!-- Status arcs -->
+              <circle
+                id="activeArc"
+                class="active-arc"
+                stroke-dasharray="0 188"
+              />
+              <circle
+                id="progressArc"
+                class="progress-arc"
+                stroke-dasharray="0 188"
+              />
+              <circle
+                id="blockedArc"
+                class="blocked-arc"
+                stroke-dasharray="0 188"
+              />
+              <circle id="holdArc" class="hold-arc" stroke-dasharray="0 188" />
+              <circle
+                id="otherArc"
+                class="other-arc"
+                stroke-dasharray="0 188"
+              />
+            </svg>
+          </div>
+
+          <!-- Tasks Card (replaces Duplicate Requests) -->
+          <div id="tasksCard" class="main-card" style="display: flex">
+            <svg
+              class="icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle cx="12" cy="12" r="9" fill="var(--blue)" opacity="0.15" />
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="var(--blue)"
+                stroke-width="1.8"
+                fill="none"
+              />
+              <path
+                d="M8.5 12.2l2.2 2.2 4.8-5"
+                stroke="var(--blue)"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+
+            <div class="content">
+              <div class="title-row">
+                <h2>Tasks</h2>
+              </div>
+              <p id="tasksSummary" class="count">0</p>
+              <div id="tasksList" class="meta" style="margin-top: 8px">
+                <!-- Task progress and details will be rendered here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity Card -->
+        <div
+          id="activityCard"
+          class="main-card recent-card"
+          style="display: flex"
+        >
+          <svg
+            class="icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect
+              x="2"
+              y="3"
+              width="20"
+              height="18"
+              rx="3"
+              fill="var(--blue)"
+              opacity="0.15"
+            />
+            <rect
+              x="2"
+              y="3"
+              width="20"
+              height="18"
+              rx="3"
+              stroke="var(--blue)"
+              stroke-width="1.8"
+              fill="none"
+            />
+            <circle cx="6" cy="7.5" r="1.2" fill="var(--blue)" />
+            <path
+              d="M9 7.5h10"
+              stroke="var(--blue)"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+            <circle cx="6" cy="10.5" r="1.2" fill="var(--blue)" />
+            <path
+              d="M9 10.5h10"
+              stroke="var(--blue)"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+            <circle cx="6" cy="13.5" r="1.2" fill="var(--blue)" />
+            <path
+              d="M9 13.5h8"
+              stroke="var(--blue)"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+            <circle cx="6" cy="16.5" r="1.2" fill="var(--blue)" />
+            <path
+              d="M9 16.5h6"
+              stroke="var(--blue)"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            />
+          </svg>
+
+          <div class="content">
+            <div class="title-row">
+              <h2>Recent Activity</h2>
+            </div>
+            <div id="recent" class="activity-list">
+              <!-- Activity items will be populated here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="search">
+          <input id="q" type="search" placeholder="Search requests…" />
+        </div>
+        <select id="fType" class="sel">
+          <option value="">All Request Types</option>
+        </select>
+        <select id="fRecip" class="sel">
+          <option value="">All Recipients</option>
+        </select>
+      </div>
+
+      <div class="grid" id="grid"></div>
+      <div class="statusline" id="status">Loading…</div>
+    </main>
+
+    <!-- In FileMaker you embed JSON here; for web we leave it empty -->
+    <script id="data" type="application/json"></script>
+
+    <div id="dbg"></div>
+
+    <!-- ================= HTML MARKUP (end) ================= -->
+
+    <!-- ================= JS (start) ================= -->
+    <script>
+      (async function () {
+        /* ======================================================
+           Main IIFE - sections:
+             - helpers (escape, lc, pct, parseDate)
+             - data load (embedded JSON / fetch)
+             - rendering (render, updateTasks)
+             - UI wiring (filters, listeners)
+           Comments inserted throughout to aid navigation; NO functional changes.
+           ===================================================== */
+        // -----------------------
+        // Helper utilities
+        // -----------------------
+        function es(v) {
+          return v == null ? "" : String(v);
+        }
+
+        function lc(s) {
+          return es(s).toLowerCase().trim();
+        }
+
+        function badgeClass(s) {
+          s = lc(s);
+          if (s === "not sent" || s === "notsent") return "b-gray";
+          if (s.indexOf("pending") === 0) return "b-blue";
+          if (s.indexOf("complete") === 0 || s.indexOf("approved") >= 0)
+            return "b-green";
+          if (s.indexOf("denied") === 0) return "b-red";
+          return "b-amber";
+        }
+
+        function pct(rec) {
+          var f = rec.fieldData || {};
+          return f.CompletedOn
+            ? 100
+            : f.dateReceived
+            ? 60
+            : f.requestedOn
+            ? 30
+            : 0;
+        }
+
+        function parseDate(s) {
+          return Date.parse(es(s)) || 0;
+        }
+
+        // -----------------------
+        // Data loading
+        // 1) embedded JSON (FileMaker mode) then fetch fallback
+        let items = [];
+        try {
+          const raw = document.getElementById("data").textContent || "";
+          if (raw.trim().length > 2) {
+            const parsed = JSON.parse(raw);
+            items = Array.isArray(parsed)
+              ? parsed
+              : (parsed.response && parsed.response.data) || [];
+          }
+        } catch (e) {}
+
+        // 2) fetch live then fallback to mock for easier testing
+        if (!items.length) {
+          const urlParams = new URLSearchParams(location.search);
+          const explicitlyMock = urlParams.has("mock");
+          const primaryUrl = explicitlyMock
+            ? "/mock/requests"
+            : "/api/requests";
+
+          try {
+            const r = await fetch(primaryUrl);
+            if (r.ok) {
+              const j = await r.json();
+              items = Array.isArray(j)
+                ? j
+                : (j.response && j.response.data) || [];
+            } else {
+              // when primary fails (e.g. 500 from /api/requests) try mock if not explicitly asking live
+              if (!explicitlyMock) {
+                const r2 = await fetch("/mock/requests");
+                if (r2.ok) {
+                  const j2 = await r2.json();
+                  items = Array.isArray(j2)
+                    ? j2
+                    : (j2.response && j2.response.data) || [];
+                }
+              }
+            }
+          } catch (e) {
+            // network/parse error, try mock as a last resort (unless the user explicitly requested live mock=false)
+            if (!explicitlyMock) {
+              try {
+                const r3 = await fetch("/mock/requests");
+                if (r3.ok) {
+                  const j3 = await r3.json();
+                  items = Array.isArray(j3)
+                    ? j3
+                    : (j3.response && j3.response.data) || [];
+                }
+              } catch (_) {
+                /* ignore - will fall through to empty items */
+              }
+            }
+          }
+        }
+
+        const grid = document.getElementById("grid");
+        const statusEl = document.getElementById("status");
+        const q = document.getElementById("q");
+        const fType = document.getElementById("fType");
+        const fRecip = document.getElementById("fRecip");
+        const kpiTotal = document.getElementById("kpiTotal");
+        const recent = document.getElementById("recent");
+
+        // clearance types list (8 possible clearance request sub-types)
+        const clearanceOptions = [
+          "Security Clearance - Level 1",
+          "Security Clearance - Level 2",
+          "Security Clearance - Level 3",
+          "Financial Clearance",
+          "Medical Clearance",
+          "Background Clearance",
+          "Operational Clearance",
+          "Executive Clearance",
+        ];
+
+        // Augment existing records: if a record is a clearance request, ensure it has a ClearanceType
+        for (let i = 0; i < items.length; i++) {
+          const f = (items[i].fieldData = items[i].fieldData || {});
+          const rt = (f["Request Type"] || "").toLowerCase();
+          if (rt.indexOf("clearance") >= 0) {
+            if (!f.ClearanceType) {
+              // assign a mock clearance subtype if missing
+              f.ClearanceType =
+                clearanceOptions[
+                  Math.floor(Math.random() * clearanceOptions.length)
+                ];
+            }
+          }
+          // add some mock uploaded file names for demo purposes if missing (randomly)
+          if (!f.RequestUploadName && Math.random() > 0.7) {
+            f.RequestUploadName =
+              "request_doc_" +
+              (1000 + Math.floor(Math.random() * 9000)) +
+              ".pdf";
+            f.requestUploadAt = new Date(
+              Date.now() - 1000 * 60 * 60 * 24 * Math.floor(Math.random() * 10)
+            ).toISOString();
+          }
+          if (!f.ResponseUploadName && Math.random() > 0.8) {
+            f.ResponseUploadName =
+              "response_" + (1000 + Math.floor(Math.random() * 9000)) + ".pdf";
+            f.responseUploadAt = new Date(
+              Date.now() - 1000 * 60 * 60 * 24 * Math.floor(Math.random() * 5)
+            ).toISOString();
+          }
+        }
+
+        const types = {},
+          recips = {};
+        for (let i = 0; i < items.length; i++) {
+          const f = items[i].fieldData || {};
+          if (f["Request Type"]) types[f["Request Type"]] = 1;
+          if (f.recipientName) recips[f.recipientName] = 1;
+        }
+        // -----------------------
+        // Renderer (produces the list of request cards)
+        // Note: there are two similar render blocks for slightly different
+        // compact/expanded templates. Both are left intact; comments help
+        // navigate them.
+        function render(list) {
+          grid.innerHTML = "";
+          for (let j = 0; j < list.length; j++) {
+            const rec = list[j],
+              fd = rec.fieldData || {};
+            const p = pct(rec);
+            const card = document.createElement("div");
+            card.className = "card req";
+
+            // Build fields to display
+            const titleText = es(fd["Request Type"] || "Request");
+            const isClearance =
+              (titleText || "").toLowerCase().indexOf("clearance") >= 0;
+            const clearanceHtml = isClearance
+              ? `<div style="margin-top:6px"><label style="font-size:12px;color:var(--muted)">Clearance type:</label><br>
+                   <select class="clearance-select sel" data-idx="${j}">
+                     ${clearanceOptions
+                       .map(
+                         (c) =>
+                           `<option value="${escapeHtml(c)}" ${
+                             escapeHtml(fd.ClearanceType || "") ===
+                             escapeHtml(c)
+                               ? "selected"
+                               : ""
+                           }>${escapeHtml(c)}</option>`
+                       )
+                       .join("")}
+                   </select>
+                 </div>`
+              : "";
+
+            const dateSent = es(fd.requestedOn || "");
+            const recipient = es(fd.recipientName || "");
+            const dateReceived = es(fd.dateReceived || "");
+            const deliveredBy = es(fd.deliveredBy || "");
+            const reqUpload = es(fd.RequestUploadName || "");
+            const respUpload = es(fd.ResponseUploadName || "");
+            const statusText = es(fd.c_status || "Not Sent");
+
+            // Compute task step completion
+            const steps = [
+              {
+                key: "sent",
+                label: "Sent",
+                done: !!fd.requestedOn,
+                date: fd.requestedOn,
+              },
+              {
+                key: "reqUpload",
+                label: "Req Upload",
+                done: !!fd.RequestUploadName,
+                date: fd.requestUploadAt,
+              },
+              {
+                key: "received",
+                label: "Received",
+                done: !!fd.dateReceived,
+                date: fd.dateReceived,
+              },
+              {
+                key: "respUpload",
+                label: "Resp Upload",
+                done: !!fd.ResponseUploadName,
+                date: fd.responseUploadAt,
+              },
+              {
+                key: "delivered",
+                label: "Delivered",
+                done: !!fd.deliveredBy,
+                date: fd.deliveredAt,
+              },
+              {
+                key: "completed",
+                label: "Completed",
+                done:
+                  !!fd.CompletedOn ||
+                  (fd.c_status && lc(fd.c_status).indexOf("approve") === 0) ||
+                  (fd.c_status && lc(fd.c_status).indexOf("complete") === 0),
+                date: fd.CompletedOn,
+              },
+            ];
+            let lastDoneIdx = -1;
+            for (let si = 0; si < steps.length; si++)
+              if (steps[si].done) lastDoneIdx = si;
+            const nextStep = steps[lastDoneIdx + 1] || null;
+
+            // status select (allow user to change among common statuses)
+            const statusOptions = [
+              "Not Sent",
+              "Submitted",
+              "Update Submitted",
+              "Approved",
+              "Denied",
+              "Cancelled",
+            ];
+
+            // compact single-line view (details kept in .expanded for future expansion)
+            const reqUploadHtml = reqUpload
+              ? '<span style="color:var(--muted)">' +
+                escapeHtml(reqUpload) +
+                "</span>"
+              : "—";
+            const respUploadHtml = respUpload
+              ? '<span style="color:var(--muted)">' +
+                escapeHtml(respUpload) +
+                "</span>"
+              : "—";
+            const stepsDots = steps
+              .map(function (s) {
+                return (
+                  '<div class="task-dot ' +
+                  (s.done ? "done" : "") +
+                  '" title="' +
+                  escapeHtml(s.label) +
+                  '"></div>'
+                );
+              })
+              .join("");
+
+            card.innerHTML = `
+              <div class="compact">
+                <div style="flex:1 1 0;min-width:0;display:flex;align-items:center;gap:10px;">
+                  <div style="min-width:0;display:flex;align-items:center;gap:8px;">
+                    <div class="title"><h3>${escapeHtml(titleText)}</h3></div>
+                    <div class="inline-fields" style="display:flex;align-items:center;gap:10px;">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span class="badge ${badgeClass(
+                          fd.c_status || ""
+                        )}" style="font-size:11px;padding:4px 6px">${escapeHtml(
+              statusText
+            )}</span>
+                      </div>
+                      <div class="inline-field" title="Recipient">${escapeHtml(
+                        recipient || "—"
+                      )}</div>
+                      <div class="inline-field" title="Requested">${
+                        dateSent && reqUpload
+                          ? escapeHtml(dateSent)
+                          : '<span class="upload-msg">Upload request document</span>'
+                      }</div>
+                      <div class="inline-upload" style="position:relative">
+                        <input class="req-upload" data-idx="${j}" type="file" style="position:absolute;left:0;top:0;opacity:0;width:1px;height:1px" />
+                        <button type="button" class="req-upload-btn" title="Request upload" aria-label="Upload request document">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 3v12"></path>
+                            <path d="M5 10l7-7 7 7"></path>
+                            <path d="M21 21H3"></path>
+                          </svg>
+                        </button>
+                      </div>
+                      <div class="inline-field" title="Received">${
+                        dateReceived && respUpload
+                          ? escapeHtml(dateReceived)
+                          : '<span class="upload-msg">Upload response document</span>'
+                      }</div>
+                      <div class="inline-upload" style="position:relative">
+                        <input class="resp-upload" data-idx="${j}" type="file" style="position:absolute;left:0;top:0;opacity:0;width:1px;height:1px" />
+                        <button type="button" class="resp-upload-btn" title="Response upload" aria-label="Upload response document">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 21V9"></path>
+                            <path d="M19 14l-7 7-7-7"></path>
+                            <path d="M3 3h18"></path>
+                          </svg>
+                        </button>
+                      </div>
+                      <div class="inline-field" title="Next" style="font-weight:600">${
+                        nextStep ? escapeHtml(nextStep.label) : "—"
+                      }</div>
+                      <div class="inline-field" style="min-width:56px;text-align:right;font-weight:700">${p}%</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="right">
+                  <button class="row-expand" aria-expanded="false" title="Show details" style="flex:0 0 auto; margin-left:8px; padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:#fff; font-size:12px">Show</button>
+                </div>
+              </div>
+              <div class="expanded">
+                <div class="expanded-form" style="margin-top:10px;display:flex;gap:12px;align-items:flex-start">
+                  <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;">
+                    ${isClearance ? `<div>${clearanceHtml}</div>` : ""}
+                    <label style="font-size:13px">Requested on: <input class="date-sent" type="date" value="${escapeHtml(
+                      (fd.requestedOn || "").split("T")[0] || ""
+                    )}"></label>
+                    <label style="font-size:13px">Recipient: <input class="recipient-input" type="text" value="${escapeHtml(
+                      fd.recipientName || ""
+                    )}"></label>
+                    <label style="font-size:13px">Date received: <input class="date-received" type="date" value="${escapeHtml(
+                      (fd.dateReceived || "").split("T")[0] || ""
+                    )}"></label>
+                    <label style="font-size:13px">Delivered by: <input class="delivered-by" type="text" value="${escapeHtml(
+                      fd.deliveredBy || ""
+                    )}"></label>
+                  </div>
+                  <div style="flex:0 0 260px;display:flex;flex-direction:column;gap:8px;">
+                    <div>Request upload: <span class="muted">${reqUploadHtml}</span> <button type="button" class="change-req" style="margin-left:8px">Change</button></div>
+                    <div>Response upload: <span class="muted">${respUploadHtml}</span> <button type="button" class="change-resp" style="margin-left:8px">Change</button></div>
+                    <div>Status: <select class="status-select sel">${statusOptions
+                      .map(
+                        (s) =>
+                          `<option value="${escapeHtml(s)}" ${
+                            escapeHtml(fd.c_status || "") === escapeHtml(s)
+                              ? "selected"
+                              : ""
+                          }>${escapeHtml(s)}</option>`
+                      )
+                      .join("")}</select></div>
+                    <div style="display:flex;gap:8px;margin-top:6px">
+                      <button class="send-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--blue);color:#fff">Send Request</button>
+                      <button class="gen-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff">Generate Request</button>
+                      <button class="view-btn" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff">View Request</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+
+            // clicking the card should toggle the expanded view (do not open FileMaker)
+            card.addEventListener("click", function (e) {
+              // if click originates from an input/select/button, ignore toggle
+              if (
+                e.target &&
+                (e.target.tagName === "INPUT" ||
+                  e.target.tagName === "SELECT" ||
+                  e.target.tagName === "BUTTON" ||
+                  e.target.closest(".req-upload") ||
+                  e.target.closest(".resp-upload"))
+              )
+                return;
+              // toggle the expanded state for this card instead of navigating to FileMaker
+              const expBtn = card.querySelector(".row-expand");
+              const open = card.classList.toggle("open");
+              if (expBtn) {
+                expBtn.setAttribute("aria-expanded", String(open));
+                expBtn.textContent = open ? "Hide" : "Show";
+              }
+              if (open) {
+                const first = card.querySelector(
+                  ".expanded input, .expanded select, .expanded button"
+                );
+                if (first && typeof first.focus === "function") first.focus();
+              }
+            });
+
+            grid.appendChild(card);
+
+            // wire up inputs/selections after the element exists
+            // clearance select
+            if (isClearance) {
+              const cs = card.querySelector(".clearance-select");
+              if (cs) {
+                cs.addEventListener("change", function () {
+                  fd.ClearanceType = cs.value;
+                  applyFilters();
+                });
+              }
+            }
+            // status select
+            const statusSel = card.querySelector(".status-select");
+            if (statusSel) {
+              statusSel.addEventListener("change", function () {
+                fd.c_status = statusSel.value;
+                // if status became 'Approved' set CompletedOn if missing
+                if (
+                  (fd.c_status || "").toLowerCase().indexOf("approve") === 0 ||
+                  (fd.c_status || "").toLowerCase().indexOf("complete") === 0
+                ) {
+                  if (!fd.CompletedOn)
+                    fd.CompletedOn = new Date().toISOString();
+                }
+                applyFilters();
+              });
+            }
+
+            // request upload
+            const reqInput = card.querySelector(".req-upload");
+            if (reqInput) {
+              reqInput.addEventListener("change", function (ev) {
+                const fsel = ev.target.files && ev.target.files[0];
+                if (fsel) {
+                  fd.RequestUploadName = fsel.name;
+                  fd.requestUploadAt = new Date().toISOString();
+                }
+                // re-render current filtered view
+                applyFilters();
+              });
+            }
+
+            // response upload
+            const respInput = card.querySelector(".resp-upload");
+            if (respInput) {
+              respInput.addEventListener("change", function (ev) {
+                const fsel = ev.target.files && ev.target.files[0];
+                if (fsel) {
+                  fd.ResponseUploadName = fsel.name;
+                  fd.responseUploadAt = new Date().toISOString();
+                }
+                applyFilters();
+              });
+            }
+
+            // expand/collapse wiring for the compact row
+            const expBtn = card.querySelector(".row-expand");
+            if (expBtn) {
+              expBtn.addEventListener("click", function (e) {
+                // don't trigger deep-link navigation when toggling
+                e.stopPropagation();
+                const open = card.classList.toggle("open");
+                expBtn.setAttribute("aria-expanded", String(open));
+                expBtn.textContent = open ? "Hide" : "Show";
+                if (open) {
+                  // focus first control in expanded area for accessibility
+                  const first = card.querySelector(
+                    ".expanded input, .expanded select, .expanded button"
+                  );
+                  if (first && typeof first.focus === "function") first.focus();
+                }
+              });
+            }
+
+            // wire small inline upload buttons to the hidden inputs (prevent card click)
+            const reqBtn = card.querySelector(".req-upload-btn");
+            if (reqBtn) {
+              const rIn = card.querySelector(".req-upload");
+              reqBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                if (rIn) rIn.click();
+              });
+            }
+            const respBtn = card.querySelector(".resp-upload-btn");
+            if (respBtn) {
+              const rpIn = card.querySelector(".resp-upload");
+              respBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                // wire change buttons in expanded area to trigger the hidden inputs
+                const changeReq = card.querySelector(".change-req");
+                if (changeReq) {
+                  changeReq.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    const rIn = card.querySelector(".req-upload");
+                    if (rIn) rIn.click();
+                  });
+                }
+                const changeResp = card.querySelector(".change-resp");
+                if (changeResp) {
+                  changeResp.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    const rpIn = card.querySelector(".resp-upload");
+                    if (rpIn) rpIn.click();
+                  });
+                }
+
+                // wire expanded field inputs to update in-memory record
+                const recipientInput = card.querySelector(".recipient-input");
+                if (recipientInput) {
+                  recipientInput.addEventListener("input", function (e) {
+                    fd.recipientName = e.target.value;
+                  });
+                  recipientInput.addEventListener("change", function () {
+                    applyFilters();
+                  });
+                }
+                const deliveredInput = card.querySelector(".delivered-by");
+                if (deliveredInput) {
+                  deliveredInput.addEventListener("input", function (e) {
+                    fd.deliveredBy = e.target.value;
+                  });
+                  deliveredInput.addEventListener("change", function () {
+                    applyFilters();
+                  });
+                }
+                const dateSentInput = card.querySelector(".date-sent");
+                if (dateSentInput) {
+                  dateSentInput.addEventListener("change", function (e) {
+                    const v = e.target.value;
+                    fd.requestedOn = v ? new Date(v).toISOString() : "";
+                    applyFilters();
+                  });
+                }
+                const dateReceivedInput = card.querySelector(".date-received");
+                if (dateReceivedInput) {
+                  dateReceivedInput.addEventListener("change", function (e) {
+                    const v = e.target.value;
+                    fd.dateReceived = v ? new Date(v).toISOString() : "";
+                    applyFilters();
+                  });
+                }
+
+                // action buttons
+                const sendBtn = card.querySelector(".send-btn");
+                if (sendBtn) {
+                  sendBtn.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    fd.c_status = "Submitted";
+                    if (!fd.requestedOn)
+                      fd.requestedOn = new Date().toISOString();
+                    applyFilters();
+                  });
+                }
+                const genBtn = card.querySelector(".gen-btn");
+                if (genBtn) {
+                  genBtn.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    console.log(
+                      "Generate request for",
+                      fd.PrimaryKey || rec.recordId
+                    );
+                    alert("Generate Request (mock)");
+                  });
+                }
+                const viewBtn = card.querySelector(".view-btn");
+                if (viewBtn) {
+                  viewBtn.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    if (rec.recordId) {
+                      window.location.href =
+                        "fmp://$/new%20excessland%20management.fmp12?script=Requests%20-%20Open%20by%20RecordID&param=" +
+                        encodeURIComponent(String(rec.recordId));
+                    }
+                  });
+                }
+              });
+            }
+          }
+          // update wheel to reflect the currently rendered list
+          drawStatusWheel(list);
+          // update tasks card based on the currently rendered list
+          updateTasks(list);
+          // update KPI to show currently visible/filtered count
+          kpiTotal.textContent = list.length;
+          statusEl.textContent = `Showing ${list.length} of ${items.length} requests.`;
+          statusEl.className = "statusline ok";
+        }
+
+        // build tasks summary from the current filtered list and render into tasksList
+        // -----------------------
+        // Tasks card renderer (progress summary)
+        function updateTasks(list) {
+          const container = document.getElementById("tasksList");
+          const summary = document.getElementById("tasksSummary");
+          if (!container || !summary) return;
+          const total = list.length;
+          // consider a task "completed" if CompletedOn exists
+          let completed = 0;
+          for (let i = 0; i < list.length; i++) {
+            const f = list[i].fieldData || {} || {};
+            if (f.CompletedOn) completed++;
+          }
+          summary.textContent = total;
+          container.innerHTML = "";
+          if (!total) {
+            container.textContent = "No tasks";
+            return;
+          }
+          const pct = Math.round((completed / total) * 100);
+          // render a compact task progress bar and a small breakdown
+          const wrap = document.createElement("div");
+          wrap.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="flex:1">
+                <div class="bar" style="height:10px;border-radius:999px;overflow:hidden;background:#eef2f7">
+                  <span style="display:block;height:100%;background:var(--blue);width:${pct}%"></span>
+                </div>
+              </div>
+              <div style="white-space:nowrap;font-size:13px;color:var(--muted)">${pct}%</div>
+            </div>
+            <div class="meta" style="margin-top:8px">${completed} completed • ${
+            total - completed
+          } open</div>
+          `;
+          container.appendChild(wrap);
+        }
+
+        // -----------------------
+        // Small helpers
+        // escapeHtml: used to safely interpolate into attributes/HTML
+        function escapeHtml(s) {
+          return (s || "").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+        }
+
+        // -----------------------
+        // Recent activity (compute and render top 3 recent items)
+        let recentArr = items.slice(0);
+        recentArr.sort((a, b) => {
+          const fa = a.fieldData || {},
+            fb = b.fieldData || {};
+          const da = Math.max(
+            parseDate(fa.CompletedOn),
+            parseDate(fa.dateReceived),
+            parseDate(fa.requestedOn)
+          );
+          const db = Math.max(
+            parseDate(fb.CompletedOn),
+            parseDate(fb.dateReceived),
+            parseDate(fb.requestedOn)
+          );
+          return db - da;
+        });
+        recentArr = recentArr.slice(0, 3);
+        recent.innerHTML = "";
+        for (let i = 0; i < recentArr.length; i++) {
+          const f = recentArr[i].fieldData || {};
+          let msg = "Request updated";
+          const d =
+            parseDate(f.CompletedOn) ||
+            parseDate(f.dateReceived) ||
+            parseDate(f.requestedOn);
+          const dt = d ? new Date(d).toLocaleDateString() : "";
+          if (f.CompletedOn) msg = "Completed";
+          else if (f.dateReceived) msg = "Response received";
+          else if (f.requestedOn) msg = "Requested";
+          let dot = "blue";
+          if (f.CompletedOn) dot = "green";
+          else if (!f.requestedOn) dot = "amber";
+          const li = document.createElement("div");
+          li.className = "li";
+          li.innerHTML = `<span class="dot ${dot}"></span>
+        <div style="flex:1">
+          <div style="font-weight:600">${es(msg)}</div>
+          <div class="muted">${es(f["Request Type"] || "")} • ${es(
+            f.recipientName || ""
+          )}${dt ? " • " + dt : ""}</div>
+          <!-- PrimaryKey removed from recent activity details -->
+        </div>
+        <button class="expand-btn" aria-expanded="false" style="flex:0 0 auto; margin-left:8px; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:#fff">Show</button>`;
+          recent.appendChild(li);
+
+          // wire expand button to toggle details (touch friendly)
+          const btn = li.querySelector(".expand-btn");
+          const details = li.querySelector(".activity-details");
+          if (btn && details) {
+            btn.addEventListener("click", function () {
+              const open = btn.getAttribute("aria-expanded") === "true";
+              btn.setAttribute("aria-expanded", String(!open));
+              btn.textContent = open ? "Show" : "Hide";
+              details.style.display = open ? "none" : "block";
+            });
+            // also allow tapping the whole list row to toggle
+            li.addEventListener("click", function (e) {
+              if (e.target === btn) return; // ignore clicks on the button itself (handled above)
+              const open = btn.getAttribute("aria-expanded") === "true";
+              btn.setAttribute("aria-expanded", String(!open));
+              btn.textContent = open ? "Show" : "Hide";
+              details.style.display = open ? "none" : "block";
+            });
+          }
+        }
+
+        function render(list) {
+          grid.innerHTML = "";
+          for (let j = 0; j < list.length; j++) {
+            const rec = list[j],
+              fd = rec.fieldData || {};
+            const p = pct(rec);
+            const card = document.createElement("div");
+            card.className = "card req";
+
+            // Build fields to display
+            const titleText = es(fd["Request Type"] || "Request");
+            const isClearance =
+              (titleText || "").toLowerCase().indexOf("clearance") >= 0;
+            const clearanceHtml = isClearance
+              ? `<div style="margin-top:6px"><label style="font-size:12px;color:var(--muted)">Clearance type:</label><br>
+                   <select class="clearance-select sel" data-idx="${j}">
+                     ${clearanceOptions
+                       .map(
+                         (c) =>
+                           `<option value="${escapeHtml(c)}" ${
+                             escapeHtml(fd.ClearanceType || "") ===
+                             escapeHtml(c)
+                               ? "selected"
+                               : ""
+                           }>${escapeHtml(c)}</option>`
+                       )
+                       .join("")}
+                   </select>
+                 </div>`
+              : "";
+
+            const dateSent = es(fd.requestedOn || "");
+            const recipient = es(fd.recipientName || "");
+            const dateReceived = es(fd.dateReceived || "");
+            const deliveredBy = es(fd.deliveredBy || "");
+            const reqUpload = es(fd.RequestUploadName || "");
+            const respUpload = es(fd.ResponseUploadName || "");
+            const statusText = es(fd.c_status || "Not Sent");
+
+            // Compute task step completion
+            const steps = [
+              {
+                key: "sent",
+                label: "Sent",
+                done: !!fd.requestedOn,
+                date: fd.requestedOn,
+              },
+              {
+                key: "reqUpload",
+                label: "Req Upload",
+                done: !!fd.RequestUploadName,
+                date: fd.requestUploadAt,
+              },
+              {
+                key: "received",
+                label: "Received",
+                done: !!fd.dateReceived,
+                date: fd.dateReceived,
+              },
+              {
+                key: "respUpload",
+                label: "Resp Upload",
+                done: !!fd.ResponseUploadName,
+                date: fd.responseUploadAt,
+              },
+              {
+                key: "delivered",
+                label: "Delivered",
+                done: !!fd.deliveredBy,
+                date: fd.deliveredAt,
+              },
+              {
+                key: "completed",
+                label: "Completed",
+                done:
+                  !!fd.CompletedOn ||
+                  (fd.c_status && lc(fd.c_status).indexOf("approve") === 0) ||
+                  (fd.c_status && lc(fd.c_status).indexOf("complete") === 0),
+                date: fd.CompletedOn,
+              },
+            ];
+            let lastDoneIdx = -1;
+            for (let si = 0; si < steps.length; si++)
+              if (steps[si].done) lastDoneIdx = si;
+            const nextStep = steps[lastDoneIdx + 1] || null;
+
+            // status select (allow user to change among common statuses)
+            const statusOptions = [
+              "Not Sent",
+              "Submitted",
+              "Update Submitted",
+              "Approved",
+              "Denied",
+              "Cancelled",
+            ];
+
+            card.innerHTML = `
+              <div style="display:flex;align-items:center;gap:12px;width:100%;">
+                <div style="flex:1 1 0;min-width:0;display:flex;align-items:center;gap:8px;">
+                  <div class="title"><h3>${escapeHtml(titleText)}</h3></div>
+                  <div class="inline-fields" style="display:flex;align-items:center;gap:10px;">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span class="badge ${badgeClass(
+                        fd.c_status || ""
+                      )}" style="font-size:11px;padding:4px 6px">${escapeHtml(
+              statusText
+            )}</span>
+                    </div>
+                    <div class="inline-field" title="Recipient">${escapeHtml(
+                      recipient || "—"
+                    )}</div>
+                    <div class="inline-field" title="Requested">${
+                      dateSent && reqUpload
+                        ? escapeHtml(dateSent)
+                        : '<span class="upload-msg">Upload request document</span>'
+                    }</div>
+                    <div class="inline-upload" style="position:relative">
+                      <input class="req-upload" data-idx="${j}" type="file" style="position:absolute;left:0;top:0;opacity:0;width:1px;height:1px" />
+                      <button type="button" class="req-upload-btn" title="Request upload" aria-label="Upload request document">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M12 3v12"></path>
+                          <path d="M5 10l7-7 7 7"></path>
+                          <path d="M21 21H3"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="inline-field" title="Received">${
+                      dateReceived && respUpload
+                        ? escapeHtml(dateReceived)
+                        : '<span class="upload-msg">Upload response document</span>'
+                    }</div>
+                    <div class="inline-upload" style="position:relative">
+                      <input class="resp-upload" data-idx="${j}" type="file" style="position:absolute;left:0;top:0;opacity:0;width:1px;height:1px" />
+                      <button type="button" class="resp-upload-btn" title="Response upload" aria-label="Upload response document">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M12 21V9"></path>
+                          <path d="M19 14l-7 7-7-7"></path>
+                          <path d="M3 3h18"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="inline-field" title="Next" style="font-weight:600">${
+                      nextStep ? escapeHtml(nextStep.label) : "—"
+                    }</div>
+                    <div class="inline-field" style="min-width:56px;text-align:right;font-weight:700">${p}%</div>
+                  </div>
+                </div>
+                <div style="flex:0 0 auto; display:flex;align-items:center;gap:8px;">
+                  <button class="row-expand" aria-expanded="false" title="Show details" style="padding:6px 8px; border-radius:8px; border:1px solid var(--border); background:#fff; font-size:12px">Show</button>
+                </div>
+              </div>
+              <div class="expanded">
+                <!-- details cleared per request; title only visible -->
+              </div>
+            `;
+
+            // clicking the card should toggle the expanded view (do not open FileMaker)
+            card.addEventListener("click", function (e) {
+              // if click originates from an input/select/button, ignore toggle
+              if (
+                e.target &&
+                (e.target.tagName === "INPUT" ||
+                  e.target.tagName === "SELECT" ||
+                  e.target.tagName === "BUTTON" ||
+                  e.target.closest(".req-upload") ||
+                  e.target.closest(".resp-upload"))
+              )
+                return;
+              // toggle the expanded state for this card instead of navigating to FileMaker
+              const expBtn = card.querySelector(".row-expand");
+              const open = card.classList.toggle("open");
+              if (expBtn) {
+                expBtn.setAttribute("aria-expanded", String(open));
+                expBtn.textContent = open ? "Hide" : "Show";
+              }
+              if (open) {
+                const first = card.querySelector(
+                  ".expanded input, .expanded select, .expanded button"
+                );
+                if (first && typeof first.focus === "function") first.focus();
+              }
+            });
+
+            grid.appendChild(card);
+
+            // wire up inputs/selections after the element exists
+            // clearance select
+            if (isClearance) {
+              const cs = card.querySelector(".clearance-select");
+              if (cs) {
+                cs.addEventListener("change", function () {
+                  fd.ClearanceType = cs.value;
+                  applyFilters();
+                });
+              }
+            }
+            // status select
+            const statusSel = card.querySelector(".status-select");
+            if (statusSel) {
+              statusSel.addEventListener("change", function () {
+                fd.c_status = statusSel.value;
+                // if status became 'Approved' set CompletedOn if missing
+                if (
+                  (fd.c_status || "").toLowerCase().indexOf("approve") === 0 ||
+                  (fd.c_status || "").toLowerCase().indexOf("complete") === 0
+                ) {
+                  if (!fd.CompletedOn)
+                    fd.CompletedOn = new Date().toISOString();
+                }
+                applyFilters();
+              });
+            }
+
+            // request upload
+            const reqInput = card.querySelector(".req-upload");
+            if (reqInput) {
+              reqInput.addEventListener("change", function (ev) {
+                const fsel = ev.target.files && ev.target.files[0];
+                if (fsel) {
+                  fd.RequestUploadName = fsel.name;
+                  fd.requestUploadAt = new Date().toISOString();
+                }
+                // re-render current filtered view
+                applyFilters();
+              });
+            }
+
+            // response upload
+            const respInput = card.querySelector(".resp-upload");
+            if (respInput) {
+              respInput.addEventListener("change", function (ev) {
+                const fsel = ev.target.files && ev.target.files[0];
+                if (fsel) {
+                  fd.ResponseUploadName = fsel.name;
+                  fd.responseUploadAt = new Date().toISOString();
+                }
+                applyFilters();
+              });
+            }
+          }
+          // update wheel to reflect the currently rendered list
+          drawStatusWheel(list);
+          // update tasks card based on the currently rendered list
+          updateTasks(list);
+          // update KPI to show currently visible/filtered count
+          kpiTotal.textContent = list.length;
+          statusEl.textContent = `Showing ${list.length} of ${items.length} requests.`;
+          statusEl.className = "statusline ok";
+        }
+
+        // -----------------------
+        // Filtering: build a filtered list from inputs and selected wheel status
+        function applyFilters() {
+          const term = lc(q.value),
+            t = fType.value,
+            rcv = fRecip.value,
+            out = [];
+          for (let k = 0; k < items.length; k++) {
+            const x = items[k],
+              fx = x.fieldData || {};
+            if (t && es(fx["Request Type"]) !== t) continue;
+            if (rcv && es(fx.recipientName) !== rcv) continue;
+            // status filter from wheel (if selected)
+            if (typeof selectedStatusKey !== "undefined" && selectedStatusKey) {
+              const sKey = statusKeyForString(fx.c_status || "");
+              if (sKey !== selectedStatusKey) continue;
+            }
+            if (!term) {
+              out.push(x);
+              continue;
+            }
+            const hay = (
+              es(fx["Request Type"]) +
+              " " +
+              es(fx.recipientName) +
+              " " +
+              es(fx.c_status)
+            ).toLowerCase();
+            if (hay.indexOf(term) >= 0) out.push(x);
+          }
+          render(out);
+        }
+
+        if (items.length) {
+          render(items);
+        } else {
+          statusEl.textContent = "No records found";
+          statusEl.className = "statusline err";
+        }
+        q.addEventListener("input", applyFilters);
+        fType.addEventListener("change", applyFilters);
+        fRecip.addEventListener("change", applyFilters);
+        // topbar toggle wiring (mobile)
+        const topbarToggle = document.getElementById("topbarToggle");
+        if (topbarToggle) {
+          topbarToggle.addEventListener("click", function () {
+            const tb = document.querySelector(".topbar");
+            const open = tb.classList.toggle("open");
+            topbarToggle.setAttribute("aria-expanded", String(open));
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>
