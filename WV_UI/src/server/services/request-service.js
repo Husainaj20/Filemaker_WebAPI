@@ -37,7 +37,9 @@ function createRequestNumber() {
 }
 
 function normalizeCreateInput(input = {}) {
-  const requester = String(input.requester || input.requestDetails?.requester || "").trim();
+  const requester = String(
+    input.requester || input.requestDetails?.requester || "",
+  ).trim();
   const title = String(input.title || input.projectName || "").trim();
 
   if (!title) {
@@ -65,7 +67,13 @@ function normalizeCreateInput(input = {}) {
   };
 }
 
-async function applyTransitionOrThrow(service, request, targetStage, actor, reason) {
+async function applyTransitionOrThrow(
+  service,
+  request,
+  targetStage,
+  actor,
+  reason,
+) {
   const result = transitionRequest(request, targetStage, {
     actor,
     reason,
@@ -157,9 +165,9 @@ export class RequestService {
   async health() {
     const hasFileMakerConfig = Boolean(
       this.config?.filemaker?.baseUrl &&
-        this.config?.filemaker?.database &&
-        this.config?.filemaker?.username &&
-        this.config?.filemaker?.password,
+      this.config?.filemaker?.database &&
+      this.config?.filemaker?.username &&
+      this.config?.filemaker?.password,
     );
 
     const repositoryStatus =
@@ -183,18 +191,42 @@ export class RequestService {
       errorMessage: "",
     };
 
-    const ready =
+    const schemaValidation = this.config?.filemaker?.schemaValidation || {
+      ready: false,
+      confirmed: false,
+      missingMappings: [],
+      placeholderMappings: [],
+      assumedMappings: [],
+      source: this.config?.filemaker?.schemaSource || "unknown",
+      sourceType: this.config?.filemaker?.schemaSourceType || "unknown",
+    };
+
+    const connectionReady =
+      this.requestedMode === "filemaker"
+        ? filemaker.connectivity === "connected"
+        : true;
+    const mappingReady = Boolean(schemaValidation.ready);
+    const fallbackActive = Boolean(fallback.active);
+
+    const baseReady =
       repositoryStatus?.ready ??
       (this.requestedMode !== "filemaker"
         ? true
-        : hasFileMakerConfig && filemaker.connectivity !== "unavailable");
+        : fallbackActive
+          ? true
+          : hasFileMakerConfig && connectionReady);
+
+    const ready =
+      this.requestedMode === "filemaker" && !fallbackActive
+        ? Boolean(baseReady) && mappingReady
+        : Boolean(baseReady);
 
     return {
       mode: activeMode,
       requestedMode: this.requestedMode,
       activeMode,
       ready,
-      fallbackActive: Boolean(fallback.active),
+      fallbackActive,
       fallback,
       diagnostics: {
         filemakerConfigured: hasFileMakerConfig,
@@ -202,6 +234,38 @@ export class RequestService {
         filemakerMissing: filemaker.missing || [],
         filemakerErrorCode: filemaker.errorCode || "",
         filemakerErrorMessage: filemaker.errorMessage || "",
+        filemaker: {
+          connectionReady,
+          mappingReady,
+          mappingConfirmed: Boolean(schemaValidation.confirmed),
+          missingMappings: schemaValidation.missingMappings || [],
+          placeholderMappings: schemaValidation.placeholderMappings || [],
+          assumedMappings: schemaValidation.assumedMappings || [],
+          schemaSource:
+            schemaValidation.source || this.config?.filemaker?.schemaSource || "",
+          schemaSourceType:
+            schemaValidation.sourceType ||
+            this.config?.filemaker?.schemaSourceType ||
+            "unknown",
+          layoutStatus: filemaker.layoutStatus || {
+            requests: {
+              layout: this.config?.filemaker?.schema?.layouts?.requests || "",
+              configured: Boolean(this.config?.filemaker?.schema?.layouts?.requests),
+              accessible: false,
+            },
+            records: {
+              layout: this.config?.filemaker?.schema?.layouts?.records || "",
+              configured: Boolean(this.config?.filemaker?.schema?.layouts?.records),
+              accessible: false,
+            },
+            sessions: {
+              layout: this.config?.filemaker?.schema?.layouts?.sessions || "",
+              configured: Boolean(this.config?.filemaker?.schema?.layouts?.sessions),
+              accessible: false,
+            },
+          },
+          fallbackActive,
+        },
       },
     };
   }
@@ -247,12 +311,16 @@ export class RequestService {
 
       merged.set(id, {
         id,
-        displayName: String(record.displayName || record.normalized?.displayName || id),
+        displayName: String(
+          record.displayName || record.normalized?.displayName || id,
+        ),
         raw: record.raw || {},
         normalized: {
           ...(record.normalized || {}),
           id,
-          displayName: String(record.displayName || record.normalized?.displayName || id),
+          displayName: String(
+            record.displayName || record.normalized?.displayName || id,
+          ),
         },
         activeRequestCount: count.activeRequestCount,
         totalRequestCount: count.totalRequestCount,
@@ -290,7 +358,8 @@ export class RequestService {
       mode: this.getActiveMode(),
       activeMode: this.getActiveMode(),
       source:
-        parentPayload.source || (this.getActiveMode() === "filemaker" ? "filemaker-data-api" : "mock"),
+        parentPayload.source ||
+        (this.getActiveMode() === "filemaker" ? "filemaker-data-api" : "mock"),
       diagnostics: {
         ...(parentPayload.diagnostics || {}),
         recordCount: merged.size,
@@ -309,7 +378,8 @@ export class RequestService {
     const activeOnly = Boolean(filters.activeOnly);
 
     return records.filter((request) => {
-      const matchesParent = !parentRecordId || String(request.recordId || "") === parentRecordId;
+      const matchesParent =
+        !parentRecordId || String(request.recordId || "") === parentRecordId;
       const matchesActive = !activeOnly || isActiveRequest(request);
       return matchesParent && matchesActive;
     });
@@ -325,13 +395,12 @@ export class RequestService {
       const recordId = String(request.recordId || "").trim();
       if (!recordId) continue;
       const key = recordId;
-      const entry =
-        parentIndex.get(key) || {
-          recordId,
-          recordLabel: request.recordLabel || recordId,
-          totalCount: 0,
-          activeCount: 0,
-        };
+      const entry = parentIndex.get(key) || {
+        recordId,
+        recordLabel: request.recordLabel || recordId,
+        totalCount: 0,
+        activeCount: 0,
+      };
 
       entry.totalCount += 1;
       if (isActiveRequest(request)) {
@@ -417,16 +486,19 @@ export class RequestService {
         STAGES.RESPONSE_RECEIVED,
       ].includes(request.stage)
     ) {
-      throw new AppError("Request must be sent before it can be marked in progress.", {
-        statusCode: 422,
-        code: "invalid_lifecycle_transition",
-        details: {
-          requestId,
-          currentStage: request.stage,
-          targetStage: STAGES.WAITING_RESPONSE,
+      throw new AppError(
+        "Request must be sent before it can be marked in progress.",
+        {
+          statusCode: 422,
+          code: "invalid_lifecycle_transition",
+          details: {
+            requestId,
+            currentStage: request.stage,
+            targetStage: STAGES.WAITING_RESPONSE,
+          },
+          expose: true,
         },
-        expose: true,
-      });
+      );
     }
 
     if (!request.requestEmail.sentAt) {
@@ -449,16 +521,19 @@ export class RequestService {
         request.stage,
       )
     ) {
-      throw new AppError("Request must be sent or in progress before completion.", {
-        statusCode: 422,
-        code: "invalid_lifecycle_transition",
-        details: {
-          requestId,
-          currentStage: request.stage,
-          targetStage: STAGES.COMPLETED,
+      throw new AppError(
+        "Request must be sent or in progress before completion.",
+        {
+          statusCode: 422,
+          code: "invalid_lifecycle_transition",
+          details: {
+            requestId,
+            currentStage: request.stage,
+            targetStage: STAGES.COMPLETED,
+          },
+          expose: true,
         },
-        expose: true,
-      });
+      );
     }
 
     if (!request.response.completedOn) {
@@ -520,10 +595,16 @@ export class RequestService {
   async v2ReadinessProbe() {
     const hasCredentials = Boolean(
       this.config?.filemaker?.baseUrl &&
-        this.config?.filemaker?.database &&
-        this.config?.filemaker?.username &&
-        this.config?.filemaker?.password,
+      this.config?.filemaker?.database &&
+      this.config?.filemaker?.username &&
+      this.config?.filemaker?.password,
     );
+    const schemaValidation = this.config?.filemaker?.schemaValidation || {
+      ready: false,
+      missingMappings: [],
+      placeholderMappings: [],
+    };
+
     const checks = [
       {
         key: "data_mode_filemaker",
@@ -541,9 +622,22 @@ export class RequestService {
         detail: hasCredentials ? "present" : "missing",
       },
       {
+        key: "filemaker_mapping_ready",
+        ok: Boolean(schemaValidation.ready),
+        detail: Boolean(schemaValidation.ready)
+          ? "ready"
+          : `missing:${(schemaValidation.missingMappings || []).length}`,
+      },
+      {
+        key: "filemaker_mapping_placeholders",
+        ok: (schemaValidation.placeholderMappings || []).length === 0,
+        detail: `count:${(schemaValidation.placeholderMappings || []).length}`,
+      },
+      {
         key: "repository_supports_download",
         ok: typeof this.repository.downloadDocument === "function",
-        detail: typeof this.repository.downloadDocument === "function" ? "yes" : "no",
+        detail:
+          typeof this.repository.downloadDocument === "function" ? "yes" : "no",
       },
     ];
 
@@ -552,6 +646,11 @@ export class RequestService {
       requestedMode: this.requestedMode,
       ready: checks.every((check) => check.ok),
       checks,
+      mapping: {
+        ready: Boolean(schemaValidation.ready),
+        missingMappings: schemaValidation.missingMappings || [],
+        placeholderMappings: schemaValidation.placeholderMappings || [],
+      },
     };
   }
 
@@ -575,7 +674,10 @@ export class RequestService {
   }
 
   async stabilityProbe(iterations = 10) {
-    const count = Math.max(1, Math.min(50, Number.parseInt(String(iterations), 10) || 10));
+    const count = Math.max(
+      1,
+      Math.min(50, Number.parseInt(String(iterations), 10) || 10),
+    );
     const startedAt = Date.now();
     const passes = [];
 
@@ -595,7 +697,9 @@ export class RequestService {
     return {
       iterations: count,
       totalDurationMs: Date.now() - startedAt,
-      averageDurationMs: Math.round(passes.reduce((sum, pass) => sum + pass.durationMs, 0) / count),
+      averageDurationMs: Math.round(
+        passes.reduce((sum, pass) => sum + pass.durationMs, 0) / count,
+      ),
       maxDurationMs: Math.max(...passes.map((pass) => pass.durationMs)),
       sample: passes.slice(0, 5),
     };

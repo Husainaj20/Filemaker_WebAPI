@@ -4,9 +4,7 @@ import { loadConfig } from "../../src/server/config.js";
 
 function withEnv(nextValues, callback) {
   const touchedKeys = Object.keys(nextValues);
-  const original = new Map(
-    touchedKeys.map((key) => [key, process.env[key]]),
-  );
+  const original = new Map(touchedKeys.map((key) => [key, process.env[key]]));
   for (const [key, value] of Object.entries(nextValues)) {
     if (value === undefined) {
       delete process.env[key];
@@ -45,6 +43,9 @@ test("config resolves data mode and filemaker base from FILEMAKER_SERVER", () =>
       assert.equal(config.filemaker.verifySsl, false);
       assert.equal(config.filemaker.timeoutMs, 9876);
       assert.equal(config.filemaker.maxRetries, 2);
+      assert.ok(config.filemaker.schemaValidation);
+      assert.equal(typeof config.filemaker.schemaValidation.ready, "boolean");
+      assert.equal(config.filemaker.schemaSourceType, "default");
     },
   );
 });

@@ -7,7 +7,10 @@ import path from "node:path";
 import { createApplication } from "../../src/server/app.js";
 
 async function withServer(configOverrides, fn) {
-  const tmpFile = path.join(os.tmpdir(), `excessland-persistence-${Date.now()}.json`);
+  const tmpFile = path.join(
+    os.tmpdir(),
+    `excessland-persistence-${Date.now()}.json`,
+  );
   const seedFile = path.resolve(process.cwd(), "data/mock-requests.json");
   await fs.copyFile(seedFile, tmpFile);
 
@@ -31,7 +34,11 @@ async function withServer(configOverrides, fn) {
         timeoutMs: 100,
         maxRetries: 0,
         schema: {
-          layouts: { requests: "ExcessLandRequests", records: "", sessions: "" },
+          layouts: {
+            requests: "ExcessLandRequests",
+            records: "",
+            sessions: "",
+          },
           fields: {},
           containerFields: {},
           recordFields: {},
@@ -76,6 +83,12 @@ test("filemaker mode falls back to mock when enabled and filemaker config is inc
       assert.equal(healthPayload.item.activeMode, "mock");
       assert.equal(healthPayload.item.fallbackActive, true);
       assert.equal(healthPayload.item.ready, true);
+      assert.ok(healthPayload.item.diagnostics.filemaker);
+      assert.equal(
+        typeof healthPayload.item.diagnostics.filemaker.mappingReady,
+        "boolean",
+      );
+      assert.ok(Array.isArray(healthPayload.item.diagnostics.filemaker.missingMappings));
 
       const listResponse = await fetch(`${baseUrl}/api/requests`);
       assert.equal(listResponse.status, 200);
@@ -98,6 +111,7 @@ test("filemaker mode without fallback reports not ready and returns config error
       assert.equal(healthPayload.item.requestedMode, "filemaker");
       assert.equal(healthPayload.item.ready, false);
       assert.equal(healthPayload.item.fallbackActive, false);
+      assert.equal(healthPayload.item.diagnostics.filemaker.connectionReady, false);
 
       const listResponse = await fetch(`${baseUrl}/api/requests`);
       assert.equal(listResponse.status, 503);
@@ -126,14 +140,20 @@ test("mock mode lifecycle remains functional", async () => {
       const created = await createResponse.json();
       const requestId = created.item.id;
 
-      const sendResponse = await fetch(`${baseUrl}/api/requests/${encodeURIComponent(requestId)}/send`, {
-        method: "POST",
-      });
+      const sendResponse = await fetch(
+        `${baseUrl}/api/requests/${encodeURIComponent(requestId)}/send`,
+        {
+          method: "POST",
+        },
+      );
       assert.equal(sendResponse.status, 200);
 
-      const startResponse = await fetch(`${baseUrl}/api/requests/${encodeURIComponent(requestId)}/start`, {
-        method: "POST",
-      });
+      const startResponse = await fetch(
+        `${baseUrl}/api/requests/${encodeURIComponent(requestId)}/start`,
+        {
+          method: "POST",
+        },
+      );
       assert.equal(startResponse.status, 200);
 
       const completeResponse = await fetch(
@@ -145,6 +165,11 @@ test("mock mode lifecycle remains functional", async () => {
       assert.equal(completeResponse.status, 200);
       const completed = await completeResponse.json();
       assert.equal(completed.item.stage, "completed");
+
+      const healthResponse = await fetch(`${baseUrl}/api/health`);
+      const healthPayload = await healthResponse.json();
+      assert.equal(healthPayload.item.mode, "mock");
+      assert.equal(healthPayload.item.ready, true);
     },
   );
 });

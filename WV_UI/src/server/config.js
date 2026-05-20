@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { validateFileMakerSchema } from "./filemaker/schema-validation.js";
 
 const serverDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(serverDir, "../..");
@@ -24,7 +25,7 @@ const defaultSchema = {
   layouts: {
     requests: process.env.FILEMAKER_LAYOUT_REQUESTS || "ExcessLandRequests",
     records: process.env.FILEMAKER_LAYOUT_RECORDS || "",
-    sessions: process.env.FILEMAKER_LAYOUT_SESSIONS || ""
+    sessions: process.env.FILEMAKER_LAYOUT_SESSIONS || "",
   },
   fields: {
     id: "PrimaryKey",
@@ -57,19 +58,25 @@ const defaultSchema = {
     responseDecision: "ResponseDecision",
     payloadJson: "PayloadJson",
     createdAt: "CreatedAt",
-    updatedAt: "UpdatedAt"
+    updatedAt: "UpdatedAt",
   },
   containerFields: {
     requestPdf: "RequestPdf",
     responsePdf: "ResponsePdf",
-    supportingPdf: process.env.FILEMAKER_CONTAINER_SUPPORTING_PDF || ""
+    supportingPdf: process.env.FILEMAKER_CONTAINER_SUPPORTING_PDF || "",
   },
   recordFields: {
     id: process.env.FILEMAKER_RECORD_FIELD_ID || "MainRecordId",
     displayName: process.env.FILEMAKER_RECORD_FIELD_DISPLAY || "RecordLabel",
-    status: process.env.FILEMAKER_RECORD_FIELD_STATUS || "",
-    location: process.env.FILEMAKER_RECORD_FIELD_LOCATION || ""
-  }
+    status: process.env.FILEMAKER_RECORD_FIELD_STATUS || "StatusLabel",
+    location: process.env.FILEMAKER_RECORD_FIELD_LOCATION || "",
+  },
+  stageMap: {
+    draft: "draft",
+    request_sent: "request_sent",
+    waiting_response: "waiting_response",
+    completed: "completed",
+  },
 };
 
 function readJsonFile(filePath) {
@@ -82,10 +89,31 @@ function readJsonFile(filePath) {
 
 function resolveSchema() {
   const schemaFile = process.env.FILEMAKER_SCHEMA_FILE;
-  if (!schemaFile) return defaultSchema;
+  if (!schemaFile) {
+    return {
+      schema: defaultSchema,
+      source: "default-schema",
+      sourceType: "default",
+    };
+  }
 
   const absolutePath = path.resolve(projectRoot, schemaFile);
-  return readJsonFile(absolutePath) || defaultSchema;
+  const schema = readJsonFile(absolutePath);
+  if (!schema) {
+    return {
+      schema: defaultSchema,
+      source: "default-schema-fallback",
+      sourceType: "default",
+    };
+  }
+
+  return {
+    schema,
+    source: absolutePath,
+    sourceType: absolutePath.toLowerCase().includes("example")
+      ? "example"
+      : "custom",
+  };
 }
 
 function resolveDataMode() {
@@ -106,7 +134,12 @@ function resolveAllowMockFallback() {
 }
 
 export function loadConfig() {
-  const filemakerSchema = resolveSchema();
+  const schemaResolution = resolveSchema();
+  const filemakerSchema = schemaResolution.schema;
+  const filemakerSchemaValidation = validateFileMakerSchema(filemakerSchema, {
+    source: schemaResolution.source,
+    sourceType: schemaResolution.sourceType,
+  });
 
   return {
     host: process.env.APP_HOST || "127.0.0.1",
@@ -124,9 +157,15 @@ export function loadConfig() {
       password: process.env.FILEMAKER_PASSWORD || "",
       apiVersion: process.env.FILEMAKER_API_VERSION || "vLatest",
       verifySsl: readBoolean(process.env.FILEMAKER_VERIFY_SSL, true),
-      timeoutMs: Number.parseInt(process.env.FILEMAKER_TIMEOUT_MS || "15000", 10),
+      timeoutMs: Number.parseInt(
+        process.env.FILEMAKER_TIMEOUT_MS || "15000",
+        10,
+      ),
       maxRetries: Number.parseInt(process.env.FILEMAKER_MAX_RETRIES || "1", 10),
-      schema: filemakerSchema
-    }
+      schemaSource: schemaResolution.source,
+      schemaSourceType: schemaResolution.sourceType,
+      schema: filemakerSchema,
+      schemaValidation: filemakerSchemaValidation,
+    },
   };
 }

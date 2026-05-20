@@ -95,13 +95,16 @@ export class FileMakerRequestRepository {
     const normalized = records.map((record) => {
       const fieldData = record?.fieldData || {};
       const id =
-        String(this.readRecordField(fieldData, "id") || record.recordId || "") ||
-        "";
+        String(
+          this.readRecordField(fieldData, "id") || record.recordId || "",
+        ) || "";
       const displayName =
         String(this.readRecordField(fieldData, "displayName") || id || "") ||
         "";
       const status = String(this.readRecordField(fieldData, "status") || "");
-      const location = String(this.readRecordField(fieldData, "location") || "");
+      const location = String(
+        this.readRecordField(fieldData, "location") || "",
+      );
 
       return {
         id,
@@ -131,17 +134,39 @@ export class FileMakerRequestRepository {
   }
 
   async getStatus() {
-    const probe = await this.client.probeConnectivity(this.layoutName);
+    const requestsProbe = await this.client.probeConnectivity(this.layoutName);
+    const recordsLayoutConfigured = Boolean(this.recordsLayoutName);
+    const isSameLayout = this.recordsLayoutName === this.layoutName;
+    const recordsProbe = recordsLayoutConfigured
+      ? isSameLayout
+        ? requestsProbe
+        : await this.client.probeConnectivity(this.recordsLayoutName)
+      : null;
+
+    const layoutStatus = {
+      requests: {
+        layout: this.layoutName,
+        configured: Boolean(this.layoutName),
+        accessible: Boolean(requestsProbe.ok),
+      },
+      records: {
+        layout: this.recordsLayoutName || "",
+        configured: recordsLayoutConfigured,
+        accessible: recordsProbe ? Boolean(recordsProbe.ok) : false,
+      },
+    };
+
     return {
       mode: "filemaker",
-      ready: Boolean(probe.ok),
+      ready: Boolean(requestsProbe.ok),
       filemaker: {
-        configured: Boolean(probe.configured),
-        connectivity: probe.ok ? "connected" : "unavailable",
-        missing: probe.missing || [],
-        errorCode: probe.errorCode || "",
-        errorMessage: probe.errorMessage || "",
-        elapsedMs: probe.elapsedMs,
+        configured: Boolean(requestsProbe.configured),
+        connectivity: requestsProbe.ok ? "connected" : "unavailable",
+        missing: requestsProbe.missing || [],
+        errorCode: requestsProbe.errorCode || "",
+        errorMessage: requestsProbe.errorMessage || "",
+        elapsedMs: requestsProbe.elapsedMs,
+        layoutStatus,
       },
       fallback: {
         allowed: false,
@@ -179,11 +204,14 @@ export class FileMakerRequestRepository {
 
     const fieldName = this.containerFields[kind] || "";
     if (!fieldName) {
-      throw new AppError("Container field is not configured for document kind.", {
-        statusCode: 404,
-        code: "document_kind_not_supported",
-        details: { kind },
-      });
+      throw new AppError(
+        "Container field is not configured for document kind.",
+        {
+          statusCode: 404,
+          code: "document_kind_not_supported",
+          details: { kind },
+        },
+      );
     }
 
     return this.client.downloadContainer(this.layoutName, recordId, fieldName);
