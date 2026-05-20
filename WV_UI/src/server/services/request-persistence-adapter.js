@@ -23,6 +23,26 @@ export class RequestPersistenceAdapter {
     return this.service.getRequest(requestId);
   }
 
+  async getRequestAudit(requestId) {
+    return this.service.listAuditEvents(requestId);
+  }
+
+  async addRequestNote(requestId, note, actor) {
+    return this.service.addRequestNote(requestId, note, actor);
+  }
+
+  async getRequestDocuments(requestId) {
+    return this.service.listRequestDocuments(requestId);
+  }
+
+  async addDocumentPlaceholder(requestId, input, actor) {
+    return this.service.addDocumentPlaceholder(requestId, input, actor);
+  }
+
+  async updateRequestResponse(requestId, patch, actor) {
+    return this.service.updateResponse(requestId, patch, actor);
+  }
+
   async createRequest(input, actor) {
     return this.service.createRequest(input, actor);
   }
@@ -44,7 +64,12 @@ export class RequestPersistenceAdapter {
   }
 
   async transitionRequest(requestId, targetStage, actor, reason) {
-    return this.service.transitionRequest(requestId, targetStage, actor, reason);
+    return this.service.transitionRequest(
+      requestId,
+      targetStage,
+      actor,
+      reason,
+    );
   }
 
   async downloadDocument(requestId, kind) {

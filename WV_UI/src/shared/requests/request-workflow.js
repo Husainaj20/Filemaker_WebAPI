@@ -14,14 +14,14 @@ export const STAGES = Object.freeze({
   DENIED: "denied",
   COMPLETED: "completed",
   CLOSED: "closed",
-  CANCELLED: "cancelled"
+  CANCELLED: "cancelled",
 });
 
 export const APPROVAL_STATES = Object.freeze({
   PENDING: "pending",
   APPROVED: "approved",
   DENIED: "denied",
-  HOLD: "hold"
+  HOLD: "hold",
 });
 
 export const TRANSITION_DEFINITIONS = [
@@ -36,7 +36,7 @@ export const TRANSITION_DEFINITIONS = [
   { stage: STAGES.DENIED, label: "Deny" },
   { stage: STAGES.COMPLETED, label: "Complete" },
   { stage: STAGES.CLOSED, label: "Close" },
-  { stage: STAGES.CANCELLED, label: "Cancel" }
+  { stage: STAGES.CANCELLED, label: "Cancel" },
 ];
 
 export const STAGE_REQUIREMENTS = {
@@ -45,30 +45,32 @@ export const STAGE_REQUIREMENTS = {
     "typeCode",
     "subTypeCode",
     "recipientId",
-    "reportingCodeId"
+    "reportingCodeId",
   ],
   [STAGES.REQUEST_PDF_READY]: [
     "typeCode",
     "subTypeCode",
     "recipientId",
     "reportingCodeId",
-    "documents.requestPdf"
+    "documents.requestPdf",
   ],
   [STAGES.REQUEST_SENT]: [],
   [STAGES.WAITING_RESPONSE]: ["requestEmail.sentAt"],
   [STAGES.RESPONSE_RECEIVED]: ["response.receivedAt"],
   [STAGES.RESPONSE_FILES_UPLOADED]: [
     "response.receivedAt",
-    "documents.responsePdf"
+    "documents.responsePdf",
   ],
   [STAGES.APPROVED]: ["response.receivedAt", "approval.state"],
   [STAGES.DENIED]: ["response.receivedAt", "approval.state"],
   [STAGES.COMPLETED]: ["approval.state", "response.completedOn"],
-  [STAGES.CLOSED]: ["approval.state", "response.completedOn"]
+  [STAGES.CLOSED]: ["approval.state", "response.completedOn"],
 };
 
 function readPath(source, path) {
-  return path.split(".").reduce((accumulator, key) => accumulator?.[key], source);
+  return path
+    .split(".")
+    .reduce((accumulator, key) => accumulator?.[key], source);
 }
 
 function isFilled(value) {
@@ -94,7 +96,7 @@ export function validateStage(request, targetStage) {
       missing.push("typeCode(valid)");
     } else if (request.subTypeCode) {
       const validSubtype = getSubTypes(request.typeCode).some(
-        (subType) => subType.code === request.subTypeCode
+        (subType) => subType.code === request.subTypeCode,
       );
       if (!validSubtype) {
         missing.push("subTypeCode(valid)");
@@ -104,14 +106,14 @@ export function validateStage(request, targetStage) {
 
   return {
     valid: missing.length === 0,
-    missing
+    missing,
   };
 }
 
 export function getAvailableTransitions(request) {
   const currentStage = request.stage || STAGES.DRAFT;
   const currentIndex = TRANSITION_DEFINITIONS.findIndex(
-    (definition) => definition.stage === currentStage
+    (definition) => definition.stage === currentStage,
   );
 
   return TRANSITION_DEFINITIONS.filter((definition, index) => {
@@ -128,14 +130,21 @@ export function getAvailableTransitions(request) {
 }
 
 export function transitionRequest(request, targetStage, options = {}) {
+  if (String(request.stage || "") === String(targetStage || "")) {
+    return {
+      ok: true,
+      request,
+    };
+  }
+
   const isKnownTarget = TRANSITION_DEFINITIONS.some(
-    (definition) => definition.stage === targetStage
+    (definition) => definition.stage === targetStage,
   );
   if (!isKnownTarget) {
     return {
       ok: false,
       code: "invalid_target_stage",
-      message: `Unknown target stage: ${String(targetStage || "")}.`
+      message: `Unknown target stage: ${String(targetStage || "")}.`,
     };
   }
 
@@ -143,7 +152,7 @@ export function transitionRequest(request, targetStage, options = {}) {
     return {
       ok: false,
       code: "terminal_stage",
-      message: "Closed or cancelled requests cannot transition further."
+      message: "Closed or cancelled requests cannot transition further.",
     };
   }
 
@@ -153,7 +162,7 @@ export function transitionRequest(request, targetStage, options = {}) {
       ok: false,
       code: "missing_required_data",
       message: `Cannot move to ${humanizeStage(targetStage)}.`,
-      missing: validation.missing
+      missing: validation.missing,
     };
   }
 
@@ -187,12 +196,12 @@ export function transitionRequest(request, targetStage, options = {}) {
     actor: options.actor || "system",
     meta: {
       targetStage,
-      reason: options.reason || ""
-    }
+      reason: options.reason || "",
+    },
   });
 
   return {
     ok: true,
-    request
+    request,
   };
 }

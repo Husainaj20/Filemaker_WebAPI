@@ -26,8 +26,12 @@ async function request(method, url, body) {
       payload.error?.message ||
       "API request failed.";
     throw new ApiError(message, {
-      code: payload.errorCode || payload.legacyError?.code || payload.error?.code,
-      details: payload.details || payload.legacyError?.details || payload.error?.details,
+      code:
+        payload.errorCode || payload.legacyError?.code || payload.error?.code,
+      details:
+        payload.details ||
+        payload.legacyError?.details ||
+        payload.error?.details,
       traceId: payload.traceId,
     });
   }
@@ -55,6 +59,42 @@ export const apiClient = {
   listRequests(filters = {}) {
     return request("GET", `/api/requests${buildQuery(filters)}`);
   },
+  getRequestById(requestId) {
+    return request("GET", `/api/requests/${encodeURIComponent(requestId)}`);
+  },
+  getRequestAudit(requestId) {
+    return request(
+      "GET",
+      `/api/requests/${encodeURIComponent(requestId)}/audit`,
+    );
+  },
+  addRequestNote(requestId, input) {
+    return request(
+      "POST",
+      `/api/requests/${encodeURIComponent(requestId)}/notes`,
+      input,
+    );
+  },
+  listRequestDocuments(requestId) {
+    return request(
+      "GET",
+      `/api/requests/${encodeURIComponent(requestId)}/documents`,
+    );
+  },
+  addDocumentPlaceholder(requestId, input) {
+    return request(
+      "POST",
+      `/api/requests/${encodeURIComponent(requestId)}/documents/placeholder`,
+      input,
+    );
+  },
+  updateResponse(requestId, patch) {
+    return request(
+      "PATCH",
+      `/api/requests/${encodeURIComponent(requestId)}/response`,
+      patch,
+    );
+  },
   listParents(filters = {}) {
     return request("GET", `/api/parents${buildQuery(filters)}`);
   },
@@ -79,13 +119,22 @@ export const apiClient = {
     );
   },
   sendRequest(requestId) {
-    return request("POST", `/api/requests/${encodeURIComponent(requestId)}/send`);
+    return request(
+      "POST",
+      `/api/requests/${encodeURIComponent(requestId)}/send`,
+    );
   },
   startRequest(requestId) {
-    return request("POST", `/api/requests/${encodeURIComponent(requestId)}/start`);
+    return request(
+      "POST",
+      `/api/requests/${encodeURIComponent(requestId)}/start`,
+    );
   },
   completeRequest(requestId) {
-    return request("POST", `/api/requests/${encodeURIComponent(requestId)}/complete`);
+    return request(
+      "POST",
+      `/api/requests/${encodeURIComponent(requestId)}/complete`,
+    );
   },
   async downloadDocument(requestId, kind) {
     const response = await fetch(

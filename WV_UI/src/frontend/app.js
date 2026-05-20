@@ -1,15 +1,14 @@
 import { apiClient, ApiError } from "./api-client.js";
 import {
-  addNote,
   createEmptyRequest,
   createId,
   humanizeStage,
-  normalizeRequest
+  normalizeRequest,
 } from "../shared/requests/request-model.js";
 import {
   APPROVAL_STATES,
   getAvailableTransitions,
-  STAGES
+  STAGES,
 } from "../shared/requests/request-workflow.js";
 import {
   getRecipientById,
@@ -17,7 +16,7 @@ import {
   getSubTypes,
   RECIPIENT_OPTIONS,
   REPORTING_CODE_OPTIONS,
-  REQUEST_TYPES
+  REQUEST_TYPES,
 } from "../shared/requests/request-types.js";
 
 function escapeHtml(value) {
@@ -34,7 +33,8 @@ function setPath(target, path, value) {
   let cursor = target;
   for (let index = 0; index < parts.length - 1; index += 1) {
     const key = parts[index];
-    cursor[key] = cursor[key] && typeof cursor[key] === "object" ? cursor[key] : {};
+    cursor[key] =
+      cursor[key] && typeof cursor[key] === "object" ? cursor[key] : {};
     cursor = cursor[key];
   }
   cursor[parts.at(-1)] = value;
@@ -58,7 +58,7 @@ async function fileToAttachment(file) {
     mimeType: file.type || "application/octet-stream",
     size: file.size,
     uploadedAt: new Date().toISOString(),
-    base64: btoa(text)
+    base64: btoa(text),
   };
 }
 
@@ -69,7 +69,7 @@ function optionMarkup(options, currentValue, placeholder = "Select") {
     items.push(
       `<option value="${escapeHtml(optionValue)}" ${
         String(optionValue) === String(currentValue) ? "selected" : ""
-      }>${escapeHtml(option.label)}</option>`
+      }>${escapeHtml(option.label)}</option>`,
     );
   }
   return items.join("");
@@ -89,7 +89,7 @@ export class ExcessLandApp {
         stage: "",
         typeCode: "",
         parentRecordId: "",
-        activeOnly: true
+        activeOnly: true,
       },
       health: null,
       loading: true,
@@ -114,13 +114,19 @@ export class ExcessLandApp {
           pm: "",
           priority: "medium",
           assignedTo: "",
-          description: ""
-        }
+          description: "",
+        },
       },
       noteDraft: {
         category: "workflow",
-        text: ""
-      }
+        text: "",
+      },
+      documentDraft: {
+        type: "supporting",
+        name: "",
+        containerField: "",
+      },
+      detailDocuments: [],
     };
 
     this.handleClick = this.handleClick.bind(this);
@@ -148,8 +154,8 @@ export class ExcessLandApp {
         apiClient.listRecords({ activeOnly: this.state.filters.activeOnly }),
         apiClient.listRequests({
           parentRecordId: this.state.filters.parentRecordId,
-          activeOnly: this.state.filters.activeOnly
-        })
+          activeOnly: this.state.filters.activeOnly,
+        }),
       ]);
 
       if (recordsResult.status === "fulfilled") {
@@ -167,34 +173,99 @@ export class ExcessLandApp {
         const requests = Array.isArray(requestsResult.value)
           ? requestsResult.value
           : [];
-        this.state.requests = requests.map((request) => normalizeRequest(request));
+        this.state.requests = requests.map((request) =>
+          normalizeRequest(request),
+        );
       }
 
-      if (recordsResult.status === "rejected" || requestsResult.status === "rejected") {
+      if (
+        recordsResult.status === "rejected" ||
+        requestsResult.status === "rejected"
+      ) {
         const firstError =
           recordsResult.status === "rejected"
             ? recordsResult.reason
             : requestsResult.reason;
         this.state.flash = {
           tone: "danger",
-          message: this.describeError(firstError)
+          message: this.describeError(firstError),
         };
       } else if (!preserveFlash) {
         this.state.flash = null;
       }
 
       this.state.selectedRequestId =
-        this.state.selectedRequestId ||
-        this.state.requests[0]?.id ||
-        "";
+        this.state.selectedRequestId || this.state.requests[0]?.id || "";
     } catch (error) {
       this.state.flash = {
         tone: "danger",
-        message: this.describeError(error)
+        message: this.describeError(error),
       };
     } finally {
       this.state.loading = false;
       this.render();
+    }
+
+    if (this.state.selectedRequestId) {
+      void this.loadRequestDetail(this.state.selectedRequestId, { silent: true });
+    }
+  }
+
+  async loadRequestDetail(requestId, options = {}) {
+    if (!requestId) return;
+
+    try {
+      const [requestResult, auditResult, documentsResult] =
+        await Promise.allSettled([
+          apiClient.getRequestById(requestId),
+          apiClient.getRequestAudit(requestId),
+          apiClient.listRequestDocuments(requestId),
+        ]);
+
+      if (requestResult.status === "fulfilled") {
+        const request = normalizeRequest(requestResult.value);
+
+        if (auditResult.status === "fulfilled") {
+          const auditItems = Array.isArray(auditResult.value)
+            ? auditResult.value
+            : [];
+          request.auditEvents = auditItems;
+          request.history = auditItems.map((event) => ({
+            id: event.id,
+            kind: event.type || "event",
+            message: event.label || "",
+            actor: event.actor || "system",
+            createdAt: event.timestamp || new Date().toISOString(),
+            notes: event.notes || "",
+          }));
+        }
+
+        if (documentsResult.status === "fulfilled") {
+          const documentItems = Array.isArray(documentsResult.value)
+            ? documentsResult.value
+            : [];
+          this.state.detailDocuments = documentItems;
+          request.documents.placeholders = documentItems.filter(
+            (document) =>
+              String(document.status || "").toLowerCase() ===
+              "placeholder",
+          );
+        }
+
+        this.upsertRequest(request);
+        this.clearDirty(request.id);
+        if (!options.silent) {
+          this.render();
+        }
+      }
+    } catch (error) {
+      if (!options.silent) {
+        this.state.flash = {
+          tone: "danger",
+          message: this.describeError(error),
+        };
+        this.render();
+      }
     }
   }
 
@@ -211,7 +282,7 @@ export class ExcessLandApp {
       draft: "Draft",
       request_sent: "Request Sent",
       waiting_response: "Waiting Response / In Progress",
-      completed: "Completed"
+      completed: "Completed",
     };
     return labels[key] || humanizeStage(key || STAGES.DRAFT);
   }
@@ -221,14 +292,15 @@ export class ExcessLandApp {
     return {
       canSend: currentStage === STAGES.DRAFT,
       canStart: currentStage === STAGES.REQUEST_SENT,
-      canComplete: currentStage === STAGES.WAITING_RESPONSE
+      canComplete: currentStage === STAGES.WAITING_RESPONSE,
     };
   }
 
   get selectedRequest() {
     return (
       this.state.requests.find(
-        (request) => String(request.id) === String(this.state.selectedRequestId)
+        (request) =>
+          String(request.id) === String(this.state.selectedRequestId),
       ) || null
     );
   }
@@ -260,7 +332,7 @@ export class ExcessLandApp {
 
   upsertRequest(nextRequest) {
     const index = this.state.requests.findIndex(
-      (request) => String(request.id) === String(nextRequest.id)
+      (request) => String(request.id) === String(nextRequest.id),
     );
 
     if (index === -1) {
@@ -293,7 +365,7 @@ export class ExcessLandApp {
       this.state.selectedTab = "overview";
       this.state.flash = {
         tone: "success",
-        message: "New request created."
+        message: "New request created.",
       };
       this.state.createModal.open = false;
       this.state.createModal.errors = [];
@@ -301,7 +373,7 @@ export class ExcessLandApp {
     } catch (error) {
       this.state.flash = {
         tone: "danger",
-        message: this.describeError(error)
+        message: this.describeError(error),
       };
       this.render();
     }
@@ -320,12 +392,12 @@ export class ExcessLandApp {
       this.clearDirty(saved.id);
       this.state.flash = {
         tone: "success",
-        message: "Request saved."
+        message: "Request saved.",
       };
     } catch (error) {
       this.state.flash = {
         tone: "danger",
-        message: this.describeError(error)
+        message: this.describeError(error),
       };
     } finally {
       this.state.saving = false;
@@ -343,7 +415,10 @@ export class ExcessLandApp {
     try {
       // Persist unsaved edits (especially document attachments) before transition validation.
       if (this.state.dirtyIds.has(String(selected.id))) {
-        const savedBeforeTransition = await apiClient.updateRequest(selected.id, selected);
+        const savedBeforeTransition = await apiClient.updateRequest(
+          selected.id,
+          selected,
+        );
         this.upsertRequest(savedBeforeTransition);
         this.clearDirty(savedBeforeTransition.id);
       }
@@ -353,12 +428,12 @@ export class ExcessLandApp {
       this.clearDirty(saved.id);
       this.state.flash = {
         tone: "success",
-        message: `Moved to ${humanizeStage(targetStage)}.`
+        message: `Moved to ${humanizeStage(targetStage)}.`,
       };
     } catch (error) {
       this.state.flash = {
         tone: "danger",
-        message: this.describeError(error)
+        message: this.describeError(error),
       };
     } finally {
       this.state.saving = false;
@@ -372,7 +447,7 @@ export class ExcessLandApp {
       requester: "",
       recordLabel: "",
       recordId: "",
-      description: ""
+      description: "",
     });
 
     this.state.createModal = {
@@ -393,8 +468,8 @@ export class ExcessLandApp {
         pm: "",
         priority: "medium",
         assignedTo: "",
-        description: ""
-      }
+        description: "",
+      },
     };
     this.render();
   }
@@ -447,7 +522,7 @@ export class ExcessLandApp {
         ea: draft.ea,
         route: draft.route,
         pm: draft.pm,
-      }
+      },
     });
   }
 
@@ -460,7 +535,10 @@ export class ExcessLandApp {
 
     try {
       if (this.state.dirtyIds.has(String(selected.id))) {
-        const savedBeforeTransition = await apiClient.updateRequest(selected.id, selected);
+        const savedBeforeTransition = await apiClient.updateRequest(
+          selected.id,
+          selected,
+        );
         this.upsertRequest(savedBeforeTransition);
         this.clearDirty(savedBeforeTransition.id);
       }
@@ -492,7 +570,7 @@ export class ExcessLandApp {
     } catch (error) {
       this.state.flash = {
         tone: "danger",
-        message: this.describeError(error)
+        message: this.describeError(error),
       };
     } finally {
       this.state.saving = false;
@@ -517,7 +595,7 @@ export class ExcessLandApp {
     } catch (error) {
       this.state.flash = {
         tone: "danger",
-        message: this.describeError(error)
+        message: this.describeError(error),
       };
       this.render();
     }
@@ -551,23 +629,126 @@ export class ExcessLandApp {
         request.documents.responsePdf = null;
       } else {
         request.documents[kind] = request.documents[kind].filter(
-          (attachment) => attachment.id !== attachmentId
+          (attachment) => attachment.id !== attachmentId,
         );
       }
     });
   }
 
-  commitNote() {
-    if (!this.state.noteDraft.text.trim()) return;
-    this.updateSelected((request) => {
-      addNote(request, {
-        category: this.state.noteDraft.category,
-        text: this.state.noteDraft.text,
-        author: "web_operator"
-      });
-    });
-    this.state.noteDraft.text = "";
+  async commitNote() {
+    const selected = this.selectedRequest;
+    const body = this.state.noteDraft.text.trim();
+    if (!selected || !body) return;
+
+    this.state.saving = true;
     this.render();
+
+    try {
+      const saved = await apiClient.addRequestNote(selected.id, {
+        category: this.state.noteDraft.category,
+        body,
+        author: "web_operator",
+      });
+      this.upsertRequest(saved);
+      this.clearDirty(saved.id);
+      this.state.noteDraft.text = "";
+      this.state.flash = {
+        tone: "success",
+        message: "Note added.",
+      };
+      await this.loadRequestDetail(saved.id, { silent: true });
+    } catch (error) {
+      this.state.flash = {
+        tone: "danger",
+        message: this.describeError(error),
+      };
+    } finally {
+      this.state.saving = false;
+      this.render();
+    }
+  }
+
+  async addDocumentPlaceholder() {
+    const selected = this.selectedRequest;
+    if (!selected) return;
+
+    const name = String(this.state.documentDraft.name || "").trim();
+    if (!name) {
+      this.state.flash = {
+        tone: "danger",
+        message: "Document placeholder name is required.",
+      };
+      this.render();
+      return;
+    }
+
+    this.state.saving = true;
+    this.render();
+    try {
+      const saved = await apiClient.addDocumentPlaceholder(selected.id, {
+        type: this.state.documentDraft.type,
+        name,
+        fileName: name,
+        status: "placeholder",
+        source: "adapter-ready",
+        containerField: this.state.documentDraft.containerField,
+      });
+      this.upsertRequest(saved);
+      this.clearDirty(saved.id);
+      this.state.documentDraft.name = "";
+      await this.loadRequestDetail(saved.id, { silent: true });
+      this.state.flash = {
+        tone: "success",
+        message: "Document placeholder added.",
+      };
+    } catch (error) {
+      this.state.flash = {
+        tone: "danger",
+        message: this.describeError(error),
+      };
+    } finally {
+      this.state.saving = false;
+      this.render();
+    }
+  }
+
+  async saveResponseMetadata() {
+    const selected = this.selectedRequest;
+    if (!selected) return;
+
+    this.state.saving = true;
+    this.render();
+
+    try {
+      const saved = await apiClient.updateResponse(selected.id, {
+        status: selected.response.status,
+        receivedAt: selected.response.receivedAt,
+        completedOn: selected.response.completedOn,
+        completedBy: selected.response.completedBy,
+        responder: selected.response.responder,
+        summary: selected.response.summary,
+        notes: selected.response.notes,
+        decision: selected.response.decision,
+        value: selected.response.value,
+        artifactName: selected.response.artifactName,
+        artifactStatus: selected.response.artifactStatus,
+      });
+      this.upsertRequest(saved);
+      this.clearDirty(saved.id);
+      await this.loadRequestDetail(saved.id, { silent: true });
+      this.state.flash = {
+        tone: "success",
+        message: "Response metadata updated.",
+      };
+    } catch (error) {
+      this.state.flash = {
+        tone: "danger",
+        message: this.describeError(error),
+      };
+    } finally {
+      this.state.saving = false;
+      this.render();
+    }
   }
 
   handleClick(event) {
@@ -585,7 +766,7 @@ export class ExcessLandApp {
       if (moduleName !== "requests") {
         this.state.flash = {
           tone: "info",
-          message: `${moduleName} is planned but not implemented in this migration slice.`
+          message: `${moduleName} is planned but not implemented in this migration slice.`,
         };
       }
       this.state.activeModule = moduleName;
@@ -596,6 +777,7 @@ export class ExcessLandApp {
     if (action === "select-request") {
       this.state.selectedRequestId = actionTarget.dataset.requestId;
       this.render();
+      void this.loadRequestDetail(this.state.selectedRequestId, { silent: true });
       return;
     }
 
@@ -636,12 +818,25 @@ export class ExcessLandApp {
     }
 
     if (action === "add-note") {
-      this.commitNote();
+      void this.commitNote();
+      return;
+    }
+
+    if (action === "add-document-placeholder") {
+      void this.addDocumentPlaceholder();
+      return;
+    }
+
+    if (action === "save-response") {
+      void this.saveResponseMetadata();
       return;
     }
 
     if (action === "remove-attachment") {
-      this.removeAttachment(actionTarget.dataset.kind, actionTarget.dataset.attachmentId);
+      this.removeAttachment(
+        actionTarget.dataset.kind,
+        actionTarget.dataset.attachmentId,
+      );
       return;
     }
 
@@ -669,8 +864,13 @@ export class ExcessLandApp {
   handleInput(event) {
     const fieldTarget = event.target.closest("[data-path]");
     if (fieldTarget) {
-      const value = fieldTarget.type === "checkbox" ? fieldTarget.checked : fieldTarget.value;
-      const requiresRerender = ["typeCode", "recipientId"].includes(fieldTarget.dataset.path);
+      const value =
+        fieldTarget.type === "checkbox"
+          ? fieldTarget.checked
+          : fieldTarget.value;
+      const requiresRerender = ["typeCode", "recipientId"].includes(
+        fieldTarget.dataset.path,
+      );
       this.updateSelected(
         (request) => {
           setPath(request, fieldTarget.dataset.path, value);
@@ -686,7 +886,7 @@ export class ExcessLandApp {
             }
           }
         },
-        { render: requiresRerender }
+        { render: requiresRerender },
       );
       return;
     }
@@ -694,7 +894,9 @@ export class ExcessLandApp {
     if (event.target.matches("[data-filter]")) {
       const filterKey = event.target.dataset.filter;
       this.state.filters[filterKey] =
-        event.target.type === "checkbox" ? event.target.checked : event.target.value;
+        event.target.type === "checkbox"
+          ? event.target.checked
+          : event.target.value;
 
       if (["parentRecordId", "activeOnly"].includes(filterKey)) {
         void this.reload();
@@ -710,8 +912,15 @@ export class ExcessLandApp {
       return;
     }
 
+    if (event.target.matches("[data-document-field]")) {
+      this.state.documentDraft[event.target.dataset.documentField] =
+        event.target.value;
+      return;
+    }
+
     if (event.target.matches("[data-create-field]")) {
-      this.state.createModal.draft[event.target.dataset.createField] = event.target.value;
+      this.state.createModal.draft[event.target.dataset.createField] =
+        event.target.value;
     }
   }
 
@@ -746,7 +955,8 @@ export class ExcessLandApp {
             <div class="detail-grid">
               ${section.fields
                 .map((field) => {
-                  const value = getPath(selected.requestDetails, field.key) || "";
+                  const value =
+                    getPath(selected.requestDetails, field.key) || "";
                   if (field.component === "textarea") {
                     return `
                       <label class="field span-2">
@@ -781,7 +991,7 @@ export class ExcessLandApp {
                 .join("")}
             </div>
           </section>
-        `
+        `,
       )
       .join("");
   }
@@ -789,6 +999,12 @@ export class ExcessLandApp {
   renderDocuments() {
     const request = this.selectedRequest;
     if (!request) return "";
+    const apiDocuments = Array.isArray(this.state.detailDocuments)
+      ? this.state.detailDocuments
+      : [];
+    const placeholders = Array.isArray(request.documents?.placeholders)
+      ? request.documents.placeholders
+      : [];
 
     const renderAttachmentList = (kind, attachments) =>
       attachments.length
@@ -805,12 +1021,69 @@ export class ExcessLandApp {
                     <button class="link-button" data-action="remove-attachment" data-kind="${escapeHtml(kind)}" data-attachment-id="${escapeHtml(attachment.id)}">Remove</button>
                   </div>
                 </div>
-              `
+              `,
             )
             .join("")}</div>`
         : `<div class="empty-inline">No files attached.</div>`;
 
     return `
+      <section class="card">
+        <div class="card-header">
+          <h3>Document Placeholders</h3>
+        </div>
+        <div class="subtle">API catalog entries: ${apiDocuments.length}</div>
+        <div class="detail-grid">
+          <label class="field">
+            <span>Type</span>
+            <select data-document-field="type">
+              ${optionMarkup(
+                [
+                  { value: "supporting", label: "Supporting" },
+                  { value: "request", label: "Request Email Artifact" },
+                  { value: "response", label: "Response Artifact" },
+                ],
+                this.state.documentDraft.type,
+              )}
+            </select>
+          </label>
+          <label class="field">
+            <span>Name</span>
+            <input type="text" data-document-field="name" value="${escapeHtml(
+              this.state.documentDraft.name,
+            )}" placeholder="Example: Response package PDF">
+          </label>
+          <label class="field">
+            <span>Container Field (optional)</span>
+            <input type="text" data-document-field="containerField" value="${escapeHtml(
+              this.state.documentDraft.containerField,
+            )}" placeholder="Unconfirmed FileMaker container field">
+          </label>
+        </div>
+        <button class="secondary-button" data-action="add-document-placeholder" ${
+          this.state.saving ? "disabled" : ""
+        }>Add Placeholder</button>
+        <div class="timeline">
+          ${
+            placeholders.length
+              ? placeholders
+                  .map(
+                    (placeholder) => `
+                  <article class="timeline-item">
+                    <div class="timeline-meta">${escapeHtml(
+                      placeholder.type || "supporting",
+                    )} · ${escapeHtml(
+                      placeholder.status || "placeholder",
+                    )} · ${escapeHtml(placeholder.uploadedAt || "")}</div>
+                    <p>${escapeHtml(placeholder.name || placeholder.fileName || "Document")}</p>
+                    <div class="subtle">Container: ${escapeHtml(placeholder.containerField || "(unconfirmed)")}</div>
+                  </article>
+                `,
+                  )
+                  .join("")
+              : `<div class="empty-inline">No placeholders recorded.</div>`
+          }
+        </div>
+      </section>
       <section class="card">
         <div class="card-header">
           <h3>Request Package</h3>
@@ -820,9 +1093,13 @@ export class ExcessLandApp {
             <span>Request PDF</span>
             <input type="file" accept=".pdf,.doc,.docx,image/*" data-upload="requestPdf">
           </label>
-          ${request.documents.requestPdf
-            ? renderAttachmentList("requestPdf", [request.documents.requestPdf])
-            : `<div class="empty-inline">Request PDF not attached.</div>`}
+          ${
+            request.documents.requestPdf
+              ? renderAttachmentList("requestPdf", [
+                  request.documents.requestPdf,
+                ])
+              : `<div class="empty-inline">Request PDF not attached.</div>`
+          }
         </div>
       </section>
       <section class="card">
@@ -834,9 +1111,13 @@ export class ExcessLandApp {
             <span>Response PDF</span>
             <input type="file" accept=".pdf,.doc,.docx,image/*" data-upload="responsePdf">
           </label>
-          ${request.documents.responsePdf
-            ? renderAttachmentList("responsePdf", [request.documents.responsePdf])
-            : `<div class="empty-inline">Response PDF not attached.</div>`}
+          ${
+            request.documents.responsePdf
+              ? renderAttachmentList("responsePdf", [
+                  request.documents.responsePdf,
+                ])
+              : `<div class="empty-inline">Response PDF not attached.</div>`
+          }
           <label class="upload-control">
             <span>Additional response files</span>
             <input type="file" accept=".pdf,.doc,.docx,image/*" data-upload="responseUploads" multiple>
@@ -874,27 +1155,29 @@ export class ExcessLandApp {
               [
                 { value: "workflow", label: "Workflow" },
                 { value: "operations", label: "Operations" },
-                { value: "approval", label: "Approval" }
+                { value: "approval", label: "Approval" },
               ],
-              this.state.noteDraft.category
+              this.state.noteDraft.category,
             )}
           </select>
           <textarea rows="3" data-note-field="text" placeholder="Add note with operational context.">${escapeHtml(this.state.noteDraft.text)}</textarea>
           <button class="primary-button" data-action="add-note">Add note</button>
         </div>
         <div class="timeline">
-          ${request.notes.length
-            ? request.notes
-                .map(
-                  (note) => `
+          ${
+            request.notes.length
+              ? request.notes
+                  .map(
+                    (note) => `
                     <article class="timeline-item">
                       <div class="timeline-meta">${escapeHtml(note.category)} · ${escapeHtml(note.author)} · ${escapeHtml(note.createdAt)}</div>
                       <p>${escapeHtml(note.text)}</p>
                     </article>
-                  `
-                )
-                .join("")
-            : `<div class="empty-inline">No notes yet.</div>`}
+                  `,
+                  )
+                  .join("")
+              : `<div class="empty-inline">No notes yet.</div>`
+          }
         </div>
       </section>
     `;
@@ -903,6 +1186,16 @@ export class ExcessLandApp {
   renderHistory() {
     const request = this.selectedRequest;
     if (!request) return "";
+    const events = Array.isArray(request.auditEvents) && request.auditEvents.length
+      ? request.auditEvents
+      : request.history.map((event) => ({
+          id: event.id,
+          type: event.kind || "event",
+          label: event.message || "",
+          actor: event.actor || "system",
+          timestamp: event.createdAt || "",
+          notes: event.notes || "",
+        }));
 
     return `
       <section class="card">
@@ -910,18 +1203,21 @@ export class ExcessLandApp {
           <h3>History</h3>
         </div>
         <div class="timeline">
-          ${request.history.length
-            ? request.history
-                .map(
-                  (event) => `
+          ${
+            events.length
+              ? events
+                  .map(
+                    (event) => `
                     <article class="timeline-item">
-                      <div class="timeline-meta">${escapeHtml(event.kind)} · ${escapeHtml(event.actor)} · ${escapeHtml(event.createdAt)}</div>
-                      <p>${escapeHtml(event.message)}</p>
+                      <div class="timeline-meta">${escapeHtml(event.type)} · ${escapeHtml(event.actor)} · ${escapeHtml(event.timestamp)}</div>
+                      <p>${escapeHtml(event.label)}</p>
+                      ${event.notes ? `<div class="subtle">${escapeHtml(event.notes)}</div>` : ""}
                     </article>
-                  `
-                )
-                .join("")
-            : `<div class="empty-inline">No history recorded yet.</div>`}
+                  `,
+                  )
+                  .join("")
+              : `<div class="empty-inline">No history recorded yet.</div>`
+          }
         </div>
       </section>
     `;
@@ -977,6 +1273,10 @@ export class ExcessLandApp {
             <input type="date" data-path="response.completedOn" value="${escapeHtml(request.response.completedOn)}">
           </label>
           <label class="field">
+            <span>Completed By</span>
+            <input type="text" data-path="response.completedBy" value="${escapeHtml(request.response.completedBy || "")}">
+          </label>
+          <label class="field">
             <span>Responder</span>
             <input type="text" data-path="response.responder" value="${escapeHtml(request.response.responder)}">
           </label>
@@ -996,9 +1296,9 @@ export class ExcessLandApp {
                   { value: APPROVAL_STATES.PENDING, label: "Pending" },
                   { value: APPROVAL_STATES.APPROVED, label: "Approved" },
                   { value: APPROVAL_STATES.DENIED, label: "Denied" },
-                  { value: APPROVAL_STATES.HOLD, label: "On Hold" }
+                  { value: APPROVAL_STATES.HOLD, label: "On Hold" },
                 ],
-                request.approval.state
+                request.approval.state,
               )}
             </select>
           </label>
@@ -1006,6 +1306,29 @@ export class ExcessLandApp {
             <span>Approved By</span>
             <input type="text" data-path="approval.by" value="${escapeHtml(request.approval.by)}">
           </label>
+          <label class="field span-2">
+            <span>Response Artifact Name</span>
+            <input type="text" data-path="response.artifactName" value="${escapeHtml(request.response.artifactName || "")}" placeholder="Placeholder until FileMaker container mapping is confirmed">
+          </label>
+          <label class="field">
+            <span>Response Artifact Status</span>
+            <select data-path="response.artifactStatus">
+              ${optionMarkup(
+                [
+                  { value: "", label: "Not set" },
+                  { value: "placeholder", label: "Placeholder" },
+                  { value: "uploaded", label: "Uploaded" },
+                  { value: "metadata_only", label: "Metadata Only" },
+                ],
+                request.response.artifactStatus || "",
+              )}
+            </select>
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button class="secondary-button" data-action="save-response" ${
+            this.state.saving ? "disabled" : ""
+          }>Update Response Metadata</button>
         </div>
       </section>
     `;
@@ -1102,9 +1425,9 @@ export class ExcessLandApp {
                   [
                     { value: "low", label: "Low" },
                     { value: "medium", label: "Medium" },
-                    { value: "high", label: "High" }
+                    { value: "high", label: "High" },
                   ],
-                  request.priority
+                  request.priority,
                 )}
               </select>
             </label>
@@ -1148,15 +1471,24 @@ export class ExcessLandApp {
       <section class="workspace-layout">
         <div class="workspace-main">
           <div class="tab-strip">
-            ${["overview", "details", "communications", "documents", "notes", "history"]
+            ${[
+              "overview",
+              "details",
+              "communications",
+              "documents",
+              "notes",
+              "history",
+            ]
               .map(
                 (tab) => `
                   <button class="${
-                    this.state.selectedTab === tab ? "tab-button active" : "tab-button"
+                    this.state.selectedTab === tab
+                      ? "tab-button active"
+                      : "tab-button"
                   }" data-action="switch-tab" data-tab="${tab}">${escapeHtml(
-                    tab.charAt(0).toUpperCase() + tab.slice(1)
+                    tab.charAt(0).toUpperCase() + tab.slice(1),
                   )}</button>
-                `
+                `,
               )
               .join("")}
           </div>
@@ -1179,25 +1511,31 @@ export class ExcessLandApp {
                 this.state.saving || !lifecycleButtons.canSend ? "disabled" : ""
               }>Send Request</button>
               <button class="secondary-button block-button" data-action="start-request" ${
-                this.state.saving || !lifecycleButtons.canStart ? "disabled" : ""
+                this.state.saving || !lifecycleButtons.canStart
+                  ? "disabled"
+                  : ""
               }>Mark In Progress</button>
               <button class="secondary-button block-button" data-action="complete-request" ${
-                this.state.saving || !lifecycleButtons.canComplete ? "disabled" : ""
+                this.state.saving || !lifecycleButtons.canComplete
+                  ? "disabled"
+                  : ""
               }>Complete Request</button>
             </div>
             <div class="transition-list">
               <div class="subtle">Advanced transitions (may require additional fields)</div>
-              ${transitions.length
-                ? transitions
-                    .map(
-                      (transition) => `
+              ${
+                transitions.length
+                  ? transitions
+                      .map(
+                        (transition) => `
                         <button class="secondary-button block-button" data-action="transition-request" data-stage="${escapeHtml(transition.stage)}">
                           ${escapeHtml(transition.label)}
                         </button>
-                      `
-                    )
-                    .join("")
-                : `<div class="empty-inline">No further transitions available.</div>`}
+                      `,
+                      )
+                      .join("")
+                  : `<div class="empty-inline">No further transitions available.</div>`
+              }
             </div>
           </section>
           <section class="card side-card">
@@ -1250,7 +1588,7 @@ export class ExcessLandApp {
                 : ""
             }
           </button>
-        `
+        `,
       )
       .join("");
   }
@@ -1265,9 +1603,11 @@ export class ExcessLandApp {
           <div class="card-header">
             <h3>New Excess Land Request</h3>
           </div>
-          ${this.state.createModal.errors.length
-            ? `<div class="flash danger">${this.state.createModal.errors.map((error) => escapeHtml(error)).join("<br>")}</div>`
-            : ""}
+          ${
+            this.state.createModal.errors.length
+              ? `<div class="flash danger">${this.state.createModal.errors.map((error) => escapeHtml(error)).join("<br>")}</div>`
+              : ""
+          }
           <div class="detail-grid">
             <label class="field">
               <span>Request Number</span>
@@ -1324,9 +1664,9 @@ export class ExcessLandApp {
                   [
                     { value: "low", label: "Low" },
                     { value: "medium", label: "Medium" },
-                    { value: "high", label: "High" }
+                    { value: "high", label: "High" },
                   ],
-                  draft.priority
+                  draft.priority,
                 )}
               </select>
             </label>
@@ -1347,15 +1687,19 @@ export class ExcessLandApp {
   render() {
     const totalRequests = this.state.requests.length;
     const waitingCount = this.state.requests.filter(
-      (request) => request.stage === STAGES.WAITING_RESPONSE
+      (request) => request.stage === STAGES.WAITING_RESPONSE,
     ).length;
     const doneCount = this.state.requests.filter((request) =>
-      [STAGES.APPROVED, STAGES.COMPLETED, STAGES.CLOSED].includes(request.stage)
+      [STAGES.APPROVED, STAGES.COMPLETED, STAGES.CLOSED].includes(
+        request.stage,
+      ),
     ).length;
     const needsActionCount = this.state.requests.filter((request) =>
-      [STAGES.DRAFT, STAGES.DETAILS_IN_PROGRESS, STAGES.RESPONSE_RECEIVED].includes(
-        request.stage
-      )
+      [
+        STAGES.DRAFT,
+        STAGES.DETAILS_IN_PROGRESS,
+        STAGES.RESPONSE_RECEIVED,
+      ].includes(request.stage),
     ).length;
 
     this.root.innerHTML = `
@@ -1373,17 +1717,19 @@ export class ExcessLandApp {
               { key: "requests", label: "Requests", status: "Live" },
               { key: "records", label: "Records", status: "Planned" },
               { key: "activity", label: "Activity", status: "Planned" },
-              { key: "settings", label: "Settings", status: "Planned" }
+              { key: "settings", label: "Settings", status: "Planned" },
             ]
               .map(
                 (module) => `
                   <button class="${
-                    this.state.activeModule === module.key ? "module-button active" : "module-button"
+                    this.state.activeModule === module.key
+                      ? "module-button active"
+                      : "module-button"
                   }" data-action="module" data-module="${module.key}">
                     <span>${module.label}</span>
                     <small>${module.status}</small>
                   </button>
-                `
+                `,
               )
               .join("")}
           </nav>
@@ -1407,7 +1753,7 @@ export class ExcessLandApp {
           ${
             this.state.flash
               ? `<div class="flash ${escapeHtml(this.state.flash.tone)}">${escapeHtml(
-                  this.state.flash.message
+                  this.state.flash.message,
                 )}</div>`
               : ""
           }
@@ -1435,7 +1781,7 @@ export class ExcessLandApp {
                 <section class="workspace-empty">
                   <h2>${escapeHtml(
                     this.state.activeModule.charAt(0).toUpperCase() +
-                      this.state.activeModule.slice(1)
+                      this.state.activeModule.slice(1),
                   )} module is reserved for the next migration slice</h2>
                   <p>The app shell already supports multi-module navigation, but this implementation only hardens Requests first.</p>
                 </section>
@@ -1447,23 +1793,38 @@ export class ExcessLandApp {
                       <input type="search" placeholder="Search title, record, or id" data-filter="query" value="${escapeHtml(this.state.filters.query)}">
                       <select data-filter="parentRecordId">
                         ${optionMarkup(
-                          [{ value: "", label: "All parents" }, ...this.state.parents.map((parent) => ({ value: parent.recordId, label: `${parent.recordLabel} (${parent.activeCount}/${parent.totalCount})` }))],
+                          [
+                            { value: "", label: "All parents" },
+                            ...this.state.parents.map((parent) => ({
+                              value: parent.recordId,
+                              label: `${parent.recordLabel} (${parent.activeCount}/${parent.totalCount})`,
+                            })),
+                          ],
                           this.state.filters.parentRecordId,
-                          "All parents"
+                          "All parents",
                         )}
                       </select>
                       <select data-filter="stage">
                         ${optionMarkup(
-                          [{ value: "", label: "All stages" }, ...Object.values(STAGES).map((stage) => ({ value: stage, label: humanizeStage(stage) }))],
+                          [
+                            { value: "", label: "All stages" },
+                            ...Object.values(STAGES).map((stage) => ({
+                              value: stage,
+                              label: humanizeStage(stage),
+                            })),
+                          ],
                           this.state.filters.stage,
-                          "All stages"
+                          "All stages",
                         )}
                       </select>
                       <select data-filter="typeCode">
                         ${optionMarkup(
-                          [{ value: "", label: "All request types" }, ...REQUEST_TYPES],
+                          [
+                            { value: "", label: "All request types" },
+                            ...REQUEST_TYPES,
+                          ],
                           this.state.filters.typeCode,
-                          "All request types"
+                          "All request types",
                         )}
                       </select>
                       <label class="field-inline">

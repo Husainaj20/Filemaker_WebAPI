@@ -120,12 +120,22 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
 
   if (url.pathname === "/api/parents" && request.method === "GET") {
     const activeOnly = readBooleanQueryParam(url.searchParams, "activeOnly");
-    return sendItemsResponse(response, 200, await adapter.listParents({ activeOnly }), traceId);
+    return sendItemsResponse(
+      response,
+      200,
+      await adapter.listParents({ activeOnly }),
+      traceId,
+    );
   }
 
   if (url.pathname === "/api/records" && request.method === "GET") {
     const activeOnly = readBooleanQueryParam(url.searchParams, "activeOnly");
-    return sendItemResponse(response, 200, await adapter.listRecords({ activeOnly }), traceId);
+    return sendItemResponse(
+      response,
+      200,
+      await adapter.listRecords({ activeOnly }),
+      traceId,
+    );
   }
 
   if (url.pathname === "/api/requests" && request.method === "POST") {
@@ -143,7 +153,12 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
 
   const requestMatch = url.pathname.match(/^\/api\/requests\/([^/]+)$/);
   if (requestMatch && request.method === "GET") {
-    return sendItemResponse(response, 200, await adapter.getRequestById(requestMatch[1]), traceId);
+    return sendItemResponse(
+      response,
+      200,
+      await adapter.getRequestById(requestMatch[1]),
+      traceId,
+    );
   }
 
   if (requestMatch && ["PUT", "PATCH"].includes(request.method)) {
@@ -160,12 +175,86 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
     );
   }
 
+  const auditMatch = url.pathname.match(/^\/api\/requests\/([^/]+)\/audit$/);
+  if (auditMatch && request.method === "GET") {
+    return sendItemsResponse(
+      response,
+      200,
+      await adapter.getRequestAudit(auditMatch[1]),
+      traceId,
+    );
+  }
+
+  const noteMatch = url.pathname.match(/^\/api\/requests\/([^/]+)\/notes$/);
+  if (noteMatch && request.method === "POST") {
+    const body = await readJsonBody(request);
+    return sendItemResponse(
+      response,
+      200,
+      await adapter.addRequestNote(
+        noteMatch[1],
+        body,
+        request.headers["x-user"] || "api_user",
+      ),
+      traceId,
+    );
+  }
+
+  const documentsListMatch = url.pathname.match(
+    /^\/api\/requests\/([^/]+)\/documents$/,
+  );
+  if (documentsListMatch && request.method === "GET") {
+    return sendItemsResponse(
+      response,
+      200,
+      await adapter.getRequestDocuments(documentsListMatch[1]),
+      traceId,
+    );
+  }
+
+  const documentsPlaceholderMatch = url.pathname.match(
+    /^\/api\/requests\/([^/]+)\/documents\/placeholder$/,
+  );
+  if (documentsPlaceholderMatch && request.method === "POST") {
+    const body = await readJsonBody(request);
+    return sendItemResponse(
+      response,
+      200,
+      await adapter.addDocumentPlaceholder(
+        documentsPlaceholderMatch[1],
+        body,
+        request.headers["x-user"] || "api_user",
+      ),
+      traceId,
+    );
+  }
+
+  const responsePatchMatch = url.pathname.match(
+    /^\/api\/requests\/([^/]+)\/response$/,
+  );
+  if (responsePatchMatch && request.method === "PATCH") {
+    const body = await readJsonBody(request);
+    return sendItemResponse(
+      response,
+      200,
+      await adapter.updateRequestResponse(
+        responsePatchMatch[1],
+        body,
+        request.headers["x-user"] || "api_user",
+      ),
+      traceId,
+    );
+  }
+
   const sendMatch = url.pathname.match(/^\/api\/requests\/([^/]+)\/send$/);
   if (sendMatch && request.method === "POST") {
     return sendItemResponse(
       response,
       200,
-      await adapter.sendRequest(sendMatch[1], request.headers["x-user"] || "api_user"),
+      await adapter.sendRequest(
+        sendMatch[1],
+        request.headers["x-user"] || "api_user",
+      ),
       traceId,
     );
   }
@@ -175,12 +264,17 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
     return sendItemResponse(
       response,
       200,
-      await adapter.startRequest(startMatch[1], request.headers["x-user"] || "api_user"),
+      await adapter.startRequest(
+        startMatch[1],
+        request.headers["x-user"] || "api_user",
+      ),
       traceId,
     );
   }
 
-  const completeMatch = url.pathname.match(/^\/api\/requests\/([^/]+)\/complete$/);
+  const completeMatch = url.pathname.match(
+    /^\/api\/requests\/([^/]+)\/complete$/,
+  );
   if (completeMatch && request.method === "POST") {
     return sendItemResponse(
       response,
@@ -215,7 +309,10 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
     /^\/api\/requests\/([^/]+)\/documents\/([^/]+)$/,
   );
   if (documentMatch && request.method === "GET") {
-    const file = await adapter.downloadDocument(documentMatch[1], documentMatch[2]);
+    const file = await adapter.downloadDocument(
+      documentMatch[1],
+      documentMatch[2],
+    );
     response.writeHead(200, {
       "content-type": file.contentType || "application/octet-stream",
       "content-disposition": `attachment; filename="${String(file.fileName || "download.bin").replace(/"/g, "")}"`,
@@ -225,20 +322,45 @@ async function routeRequest(adapter, service, request, response, url, traceId) {
     return;
   }
 
-  if (url.pathname === "/api/diagnostics/v2-readiness" && request.method === "GET") {
-    return sendItemResponse(response, 200, await adapter.v2ReadinessProbe(), traceId);
+  if (
+    url.pathname === "/api/diagnostics/v2-readiness" &&
+    request.method === "GET"
+  ) {
+    return sendItemResponse(
+      response,
+      200,
+      await adapter.v2ReadinessProbe(),
+      traceId,
+    );
   }
 
-  if (url.pathname === "/api/diagnostics/container-mapping" && request.method === "GET") {
-    return sendItemResponse(response, 200, await adapter.containerMappingProbe(), traceId);
+  if (
+    url.pathname === "/api/diagnostics/container-mapping" &&
+    request.method === "GET"
+  ) {
+    return sendItemResponse(
+      response,
+      200,
+      await adapter.containerMappingProbe(),
+      traceId,
+    );
   }
 
-  if (url.pathname === "/api/diagnostics/stability" && ["GET", "POST"].includes(request.method)) {
+  if (
+    url.pathname === "/api/diagnostics/stability" &&
+    ["GET", "POST"].includes(request.method)
+  ) {
     const body = request.method === "POST" ? await readJsonBody(request) : {};
     const queryIterations = url.searchParams.get("iterations");
     const iterations =
-      body.iterations ?? (queryIterations ? Number.parseInt(queryIterations, 10) : undefined);
-    return sendItemResponse(response, 200, await adapter.stabilityProbe(iterations), traceId);
+      body.iterations ??
+      (queryIterations ? Number.parseInt(queryIterations, 10) : undefined);
+    return sendItemResponse(
+      response,
+      200,
+      await adapter.stabilityProbe(iterations),
+      traceId,
+    );
   }
 
   if (request.method !== "GET") {
@@ -295,7 +417,8 @@ export function createApplication(overrides = {}) {
       logger,
       mode: config.dataMode,
     });
-  const adapter = overrides.adapter || new RequestPersistenceAdapter({ service });
+  const adapter =
+    overrides.adapter || new RequestPersistenceAdapter({ service });
   service.config = config;
 
   async function handler(request, response) {
@@ -329,9 +452,7 @@ export function createApplication(overrides = {}) {
       });
       sendJson(response, appError.statusCode, {
         ok: false,
-        error: appError.expose
-          ? appError.message
-          : "Unexpected server error.",
+        error: appError.expose ? appError.message : "Unexpected server error.",
         errorCode: appError.code,
         details: appError.expose ? appError.details : null,
         legacyError: {

@@ -102,6 +102,29 @@ Do not run mutation smoke unless both of the following are true:
 - mapping checklist is completed for the target environment
 - environment is explicitly approved for mutation testing
 
+## Phase 3 request detail operations
+
+Detail endpoints:
+
+- `GET /api/requests/:id`
+- `GET /api/requests/:id/audit`
+- `POST /api/requests/:id/notes`
+- `GET /api/requests/:id/documents`
+- `POST /api/requests/:id/documents/placeholder`
+- `PATCH /api/requests/:id/response`
+
+Mock verification sequence:
+
+1. Open a request from the list and confirm detail pane updates.
+2. Add a note and confirm note/timeline updates.
+3. Add a document placeholder and confirm it appears under Documents.
+4. Update response artifact metadata and confirm persistence.
+5. Run send -> start -> complete and confirm timeline events do not duplicate on repeated actions.
+
+Reference:
+
+- `docs/phase-3-request-detail-depth.md`
+
 ## Common failures
 
 - `filemaker_config_incomplete`: Missing server/database/credentials.

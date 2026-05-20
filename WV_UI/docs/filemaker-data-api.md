@@ -56,6 +56,16 @@ Checklist reference:
 - Core request record reads and writes are implemented
 - Request and response PDF uploads are wired through configured container fields
 - Additional related uploads are stored canonically now and need deeper FileMaker layout or related-record mapping if you want them persisted as separate containers in FileMaker
+- Request detail placeholders and response artifact metadata are persisted through canonical payload JSON until dedicated production mappings are confirmed
+
+## Phase 3 detail-depth mapping notes
+
+- New request detail APIs support audit events, notes, document placeholders, and response artifact metadata.
+- These additions are payload-driven and do not introduce new required FileMaker mappings for normal tests.
+- Before production container upload cutover, confirm:
+	- response artifact container field mapping
+	- supporting upload container or related-table strategy
+	- whether response artifact metadata should move from payload JSON to dedicated fields
 
 ## Health and diagnostics behavior
 

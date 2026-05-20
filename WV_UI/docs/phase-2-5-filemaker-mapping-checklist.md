@@ -47,6 +47,9 @@ Validation statuses used:
 | responseSummary | fields.responseSummary | no | ResponseSummary | assumed | Optional response metadata. |
 | responseNotes | fields.responseNotes | no | ResponseNotes | assumed | Optional response metadata. |
 | responseDecision | fields.responseDecision | no | ResponseDecision | assumed | Optional response metadata. |
+| responseCompletedBy | fields.responseCompletedBy | no (Phase 3) | empty | missing | Can remain in PayloadJson until dedicated field is confirmed. |
+| responseArtifactName | fields.responseArtifactName | no (Phase 3) | empty | missing | Placeholder metadata in Phase 3; map when production naming is confirmed. |
+| responseArtifactStatus | fields.responseArtifactStatus | no (Phase 3) | empty | missing | Placeholder metadata in Phase 3; optional for production reporting. |
 
 ## Lifecycle Stage Mappings
 
@@ -73,6 +76,7 @@ Validation statuses used:
 | requestPdf | containerFields.requestPdf | no (Phase 2.5) | RequestPdf | assumed | Currently optional for mapping readiness; will become required if Phase 3 attachment scope requires. |
 | responsePdf | containerFields.responsePdf | no (Phase 2.5) | ResponsePdf | assumed | Same as above. |
 | supportingPdf | containerFields.supportingPdf | no (Phase 2.5) | empty | missing | Confirm only when supporting upload persistence path is finalized. |
+| responseArtifactContainer | containerFields.responseArtifact | no (Phase 3) | empty | missing | Optional alias for future response artifact upload path if separated from responsePdf. |
 
 ## Script Names (Legacy / Integration References)
 

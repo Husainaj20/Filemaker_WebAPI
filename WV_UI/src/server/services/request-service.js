@@ -1,7 +1,9 @@
 import { AppError } from "../lib/errors.js";
 import {
+  addNote,
   appendHistory,
   createEmptyRequest,
+  normalizeDocumentPlaceholder,
   normalizeRequest,
   nowIso,
 } from "../../shared/requests/request-model.js";
@@ -28,6 +30,20 @@ function normalizeDocumentKind(kind) {
   if (kind === "response" || kind === "responsePdf") return "responsePdf";
   if (kind === "supporting" || kind === "supportingPdf") return "supportingPdf";
   return "";
+}
+
+function mapAttachmentToDocumentEntry(kind, attachment, containerFields = {}) {
+  if (!attachment) return null;
+  return {
+    id: String(attachment.id || ""),
+    type: kind,
+    name: String(attachment.name || `${kind}.bin`),
+    status: attachment.base64 ? "uploaded" : "metadata_only",
+    uploadedAt: attachment.uploadedAt || "",
+    source: "attachment",
+    fileName: String(attachment.name || ""),
+    containerField: String(containerFields[kind] || ""),
+  };
 }
 
 function createRequestNumber() {
@@ -460,11 +476,17 @@ export class RequestService {
     reason = "",
   ) {
     const request = await this.getRequest(requestId);
+    if (String(request.stage || "") === String(targetStage || "")) {
+      return request;
+    }
     return applyTransitionOrThrow(this, request, targetStage, actor, reason);
   }
 
   async sendRequest(requestId, actor = "system") {
     const request = await this.getRequest(requestId);
+    if (request.stage === STAGES.REQUEST_SENT) {
+      return request;
+    }
     if (!request.requestEmail.sentAt) {
       request.requestEmail.sentAt = new Date().toISOString().slice(0, 10);
     }
@@ -479,6 +501,9 @@ export class RequestService {
 
   async startRequest(requestId, actor = "system") {
     const request = await this.getRequest(requestId);
+    if (request.stage === STAGES.WAITING_RESPONSE) {
+      return request;
+    }
     if (
       ![
         STAGES.REQUEST_SENT,
@@ -516,6 +541,9 @@ export class RequestService {
 
   async completeRequest(requestId, actor = "system") {
     const request = await this.getRequest(requestId);
+    if (request.stage === STAGES.COMPLETED) {
+      return request;
+    }
     if (
       [STAGES.DRAFT, STAGES.TYPE_SELECTED, STAGES.DETAILS_IN_PROGRESS].includes(
         request.stage,
@@ -539,6 +567,12 @@ export class RequestService {
     if (!request.response.completedOn) {
       request.response.completedOn = new Date().toISOString().slice(0, 10);
     }
+    if (!request.response.completedBy) {
+      request.response.completedBy = actor;
+    }
+    if (!request.response.responder) {
+      request.response.responder = actor;
+    }
 
     return applyTransitionOrThrow(
       this,
@@ -547,6 +581,177 @@ export class RequestService {
       actor,
       "complete_request",
     );
+  }
+
+  async listAuditEvents(requestId) {
+    const request = await this.getRequest(requestId);
+    return Array.isArray(request.auditEvents)
+      ? request.auditEvents
+      : Array.isArray(request.history)
+        ? request.history.map((entry) => ({
+            id: entry.id,
+            type: entry.type || entry.kind || "event",
+            label: entry.label || entry.message || "",
+            timestamp: entry.timestamp || entry.createdAt || nowIso(),
+            actor: entry.actor || "system",
+            notes: entry.notes || "",
+          }))
+        : [];
+  }
+
+  async addRequestNote(requestId, noteInput = {}, actor = "system") {
+    const request = await this.getRequest(requestId);
+    const body = String(noteInput.body || noteInput.text || "").trim();
+    if (!body) {
+      throw new AppError("Note body is required.", {
+        statusCode: 400,
+        code: "note_body_required",
+        expose: true,
+      });
+    }
+
+    addNote(request, {
+      category: noteInput.category || "general",
+      text: body,
+      body,
+      author: noteInput.author || actor,
+    });
+
+    appendHistory(request, {
+      kind: "note_added",
+      type: "note_added",
+      label: "Note Added",
+      message: "A note was added to the request.",
+      actor: noteInput.author || actor,
+      notes: body,
+    });
+
+    return this.repository.save(request);
+  }
+
+  async listRequestDocuments(requestId) {
+    const request = await this.getRequest(requestId);
+    const containerFields = this.config?.filemaker?.schema?.containerFields || {};
+    const documents = [];
+
+    const requestPdf = mapAttachmentToDocumentEntry(
+      "requestPdf",
+      request.documents?.requestPdf,
+      containerFields,
+    );
+    if (requestPdf) documents.push(requestPdf);
+
+    const responsePdf = mapAttachmentToDocumentEntry(
+      "responsePdf",
+      request.documents?.responsePdf,
+      containerFields,
+    );
+    if (responsePdf) documents.push(responsePdf);
+
+    for (const upload of request.documents?.relatedUploads || []) {
+      const entry = mapAttachmentToDocumentEntry(
+        "supportingPdf",
+        upload,
+        containerFields,
+      );
+      if (entry) documents.push(entry);
+    }
+
+    for (const upload of request.documents?.responseUploads || []) {
+      const entry = mapAttachmentToDocumentEntry(
+        "responseSupporting",
+        upload,
+        containerFields,
+      );
+      if (entry) documents.push(entry);
+    }
+
+    for (const placeholder of request.documents?.placeholders || []) {
+      documents.push(normalizeDocumentPlaceholder(placeholder));
+    }
+
+    return documents.sort((a, b) =>
+      String(b.uploadedAt || "").localeCompare(String(a.uploadedAt || "")),
+    );
+  }
+
+  async addDocumentPlaceholder(requestId, input = {}, actor = "system") {
+    const request = await this.getRequest(requestId);
+    const placeholder = normalizeDocumentPlaceholder({
+      type: input.type || "supporting",
+      name: input.name || input.fileName || "Document Placeholder",
+      status: input.status || "placeholder",
+      source: input.source || "adapter-ready",
+      fileName: input.fileName || input.name || "",
+      containerField: input.containerField || "",
+    });
+
+    request.documents = request.documents || {};
+    request.documents.placeholders = Array.isArray(request.documents.placeholders)
+      ? request.documents.placeholders
+      : [];
+
+    const duplicate = request.documents.placeholders.find(
+      (item) =>
+        String(item.type || "") === String(placeholder.type || "") &&
+        String(item.fileName || item.name || "") ===
+          String(placeholder.fileName || placeholder.name || "") &&
+        String(item.containerField || "") ===
+          String(placeholder.containerField || ""),
+    );
+
+    if (!duplicate) {
+      request.documents.placeholders.unshift(placeholder);
+      appendHistory(request, {
+        kind: "document_placeholder_added",
+        type: "document_placeholder_added",
+        label: "Document Placeholder Added",
+        message: `Document placeholder added (${placeholder.type}).`,
+        actor,
+      });
+    }
+
+    return this.repository.save(request);
+  }
+
+  async updateResponse(requestId, patch = {}, actor = "system") {
+    const request = await this.getRequest(requestId);
+    const allowedKeys = new Set([
+      "status",
+      "receivedAt",
+      "completedOn",
+      "completedBy",
+      "responder",
+      "summary",
+      "notes",
+      "decision",
+      "value",
+      "artifactName",
+      "artifactStatus",
+    ]);
+
+    request.response = request.response || {};
+    for (const [key, value] of Object.entries(patch || {})) {
+      if (!allowedKeys.has(key)) continue;
+      request.response[key] = value;
+    }
+
+    if (request.response.completedBy && !request.response.responder) {
+      request.response.responder = request.response.completedBy;
+    }
+    if (request.response.responder && !request.response.completedBy) {
+      request.response.completedBy = request.response.responder;
+    }
+
+    appendHistory(request, {
+      kind: "response_updated",
+      type: "response_updated",
+      label: "Response Updated",
+      message: "Response metadata was updated.",
+      actor,
+    });
+
+    return this.repository.save(request);
   }
 
   async downloadDocument(requestId, kind) {
